@@ -1,0 +1,359 @@
+WWI Pilot RPG — aircraft.txt (CSV Template + Field Guide) — v1
+(Use this file as your single “data bible” for aircraft rows.)
+
+============================================================
+1) CSV TEMPLATE (copy/paste into aircraft.csv)
+============================================================
+
+# Column headers (one line):
+aircraft_id,name,nation,manufacturer,year_introduced,role_primary,variant,speed_range,climb_range,turn_range,stability_range,dive_safety_range,ceiling_range,range_range,fighter_role,bomber_role,recon_role,firepower_range,accuracy_range,ammo_range,weapon_type,firing_arc,airframe_strength_range,engine_durability_range,pilot_protection_range,fuel_vulnerability_range,reliability_range,maintenance_cost_range,repair_time_range,spare_parts_availability_range,training_difficulty_range,skill_ceiling_range,ace_synergy_range,hangar_size,runway_requirement_range,fuel_consumption_range,supply_strain_range,base_reputation_required,command_priority_tier,production_scarcity_range,doctrine_tags
+
+# Example row (delete later if you want):
+F001,Fokker E.III,Germany,Fokker,1915,Fighter,Base,6,5,4,6,3,5,4,8,1,2,5,4,6,MG,Forward,4,4,2,6,6,3,3,7,6,5,4,Small,3,4,3,10,1,6,"early_war,interceptor"
+
+============================================================
+2) FIELD GUIDE — WHAT EACH STAT MEANS (and how to use it)
+============================================================
+
+------------------------------------------------------------
+A) Identification (metadata; no formulas)
+------------------------------------------------------------
+
+aircraft_id
+- Unique key for the aircraft variant row.
+- Recommended pattern:
+  - F### for fighter, B### for bomber, R### for recon, M### for multirole
+  - Add suffix for variants: F012A, F012Late, etc.
+
+name
+- Common name of the aircraft (player-facing).
+
+nation
+- Country/faction owning the design (used for tech trees, availability).
+
+manufacturer
+- Flavor + potential procurement hooks.
+
+year_introduced
+- Historical intro year; used for timeline gating (soft/hard as you choose).
+
+role_primary
+- Primary intended role label (Fighter / Bomber / Recon / Multirole).
+- This is NOT a restriction; it’s UI + doctrine weighting.
+
+variant
+- Human-readable variant string (“Base”, “A”, “Late”, “Trop”, etc.).
+
+------------------------------------------------------------
+B) Flight Performance (core feel; 1–10 ranges)
+------------------------------------------------------------
+
+speed_range
+- Relative top speed + acceleration feel in level flight.
+- High speed helps:
+  - Engage/disengage
+  - Reposition
+  - Energy fighting
+
+climb_range
+- Rate of gaining altitude / energy.
+- High climb helps:
+  - Start fights above the enemy
+  - Reacquire advantage after dives
+
+turn_range
+- Sustained turning performance.
+- High turn helps:
+  - Dogfights
+  - Staying on target in close engagement
+
+stability_range
+- Forgiveness and control steadiness.
+- High stability helps:
+  - Rookie survivability
+  - Landing/takeoff
+  - Easier gunnery passes
+
+dive_safety_range
+- Structural + control safety in dives.
+- High dive safety helps:
+  - Boom-and-zoom tactics
+  - Escape dives
+  - Prevent catastrophic failure at high speed
+- Low dive safety can impose:
+  - Higher risk of wing failure
+  - Control lockups
+  - Pilot blackouts (if you add that later)
+
+ceiling_range
+- Effective high-altitude performance.
+- High ceiling helps:
+  - Avoiding ground fire
+  - High-altitude interception/recon
+  - Weather/visibility advantages (if modeled)
+
+range_range
+- How long the aircraft can stay operational away from base.
+- High range helps:
+  - Deep recon
+  - Long escort missions
+  - Patrol endurance
+
+------------------------------------------------------------
+C) Role Skill Ratings (0–10; defines “role aptitude”)
+------------------------------------------------------------
+
+fighter_role
+- Ability to perform air-to-air combat missions effectively.
+- Used as a multiplier/weight in air combat resolution.
+
+bomber_role
+- Ability to deliver bombs / ground attack payload effectively.
+- Used as a multiplier/weight in bombing resolution.
+
+recon_role
+- Ability to spot/photograph/observe and return with intel.
+- Used as a multiplier/weight in recon resolution.
+
+IMPORTANT:
+- These three stats are how you get “statistically matching but not obvious” aircraft.
+  Example: a light bomber might have bomber_role 7 and fighter_role 4.
+
+------------------------------------------------------------
+D) Combat Capability (combat output; 1–10 ranges + enums)
+------------------------------------------------------------
+
+firepower_range
+- Raw damage potential per attack window (guns, mounts, caliber).
+- Affects damage dealt (or “hits” per pass).
+
+accuracy_range
+- Weapon effectiveness + sighting + stability-in-gunnery (aircraft-side only).
+- Pilot skill still matters separately.
+
+ammo_range
+- Endurance of ammo before reload/return.
+- High ammo_range supports longer engagements or multiple passes.
+
+weapon_type (enum)
+- MG / Cannon / Mixed
+- Used for flavor + potential modifiers (e.g., cannon heavier hit, lower ROF).
+
+firing_arc (enum)
+- Forward / Flexible / Rear / Mixed
+- Forward: classic fighter fixed guns.
+- Flexible: observer/gunner arcs.
+- Rear: defensive-only (rare as primary).
+- Mixed: forward + rear or multiple positions.
+
+------------------------------------------------------------
+E) Survivability (how it dies; 1–10 ranges)
+------------------------------------------------------------
+
+airframe_strength_range
+- Structural toughness: ability to take hits without breaking apart.
+- Reduces critical failures and catastrophic breakup.
+
+engine_durability_range
+- Chance the engine survives hits and keeps running.
+- Impacts forced landings, loss rate, “limp home” outcomes.
+
+pilot_protection_range
+- Cockpit protection and relative pilot safety.
+- Reduces pilot injury/death probability.
+
+fuel_vulnerability_range
+- How likely fuel ignites/explodes when hit.
+- NOTE: Higher number means MORE vulnerable (by design).
+- High vulnerability = scary fireballs. Good for WWI flavor.
+
+------------------------------------------------------------
+F) Maintenance & Reliability (base layer; 1–10 ranges)
+------------------------------------------------------------
+
+reliability_range
+- How often the aircraft suffers malfunctions, aborted takeoffs, weapon jams (optional), etc.
+- High reliability:
+  - Fewer mission cancellations
+  - Less downtime
+
+maintenance_cost_range
+- Ongoing cost/effort to keep operational.
+- High cost strains base economy/resources.
+
+repair_time_range
+- How long it takes to restore after damage.
+- High repair time reduces readiness.
+
+spare_parts_availability_range
+- Ease of acquiring parts (supply chain health).
+- High availability improves readiness and repair speed.
+
+------------------------------------------------------------
+G) Training & Pilot Interaction (progression; 1–10 ranges)
+------------------------------------------------------------
+
+training_difficulty_range
+- How hard it is to learn to fly/fight effectively.
+- High difficulty increases training time and rookie crash risk (if modeled).
+
+skill_ceiling_range
+- How much a talented pilot can “extract” from this airframe.
+- High ceiling = aces become terrifying.
+
+ace_synergy_range
+- How well this aircraft rewards elite pilots specifically.
+- This is the mechanical home for:
+  “pilots of a certain rank may request a specific machine.”
+
+------------------------------------------------------------
+H) Logistics (base constraints; mixed type)
+------------------------------------------------------------
+
+hangar_size (enum)
+- Small / Medium / Large
+- Used for base capacity planning.
+
+runway_requirement_range (1–10)
+- How demanding it is to operate from rough fields/short strips.
+- High requirement reduces which bases can field it early.
+
+fuel_consumption_range (1–10)
+- How quickly it burns fuel during missions.
+- High consumption increases operational cost and may cap sortie frequency.
+
+supply_strain_range (1–10)
+- General logistical burden: special tools, fragile parts, training overhead.
+- High strain slows expansion and reduces readiness under stress.
+
+------------------------------------------------------------
+I) Strategic Meta (campaign gating; mixed type)
+------------------------------------------------------------
+
+base_reputation_required (integer; recommended 0–100)
+- Minimum base reputation to request/receive this aircraft type.
+- Lets you keep timeline but still gate availability.
+
+command_priority_tier (integer; recommended 1–5)
+- 1 = elite/prototype priority
+- 5 = common/backline distribution
+- Used for “corporate/military favoritism” mechanics.
+
+production_scarcity_range (1–10)
+- How rare the airframe is.
+- Higher = rarer (harder to replace; fewer delivered per period).
+
+doctrine_tags (string list)
+- Comma-separated tags in quotes: "boom_and_zoom,interceptor,high_altitude"
+- Used for AI behavior, mission matching, and UI filtering later.
+
+============================================================
+3) RECOMMENDED DEFAULT SCALE (so your numbers mean something)
+============================================================
+
+Use 1–10 for most ranges.
+Here’s a simple “feel” guide:
+
+1–2  = poor / problematic
+3–4  = below average
+5–6  = average / serviceable
+7–8  = strong
+9–10 = elite / exceptional
+
+Role stats use 0–10:
+0    = cannot perform role (or not intended at all)
+1–3  = emergency-only
+4–6  = workable
+7–9  = excellent
+10   = specialist best-in-class
+
+============================================================
+4) CALCULATIONS / FORMULAS (minimal, but useful)
+============================================================
+
+Your aircraft table should NOT store derived values.
+These are recommended runtime formulas (examples) you can implement later.
+
+------------------------------------------------------------
+A) Mission Effectiveness Scores (aircraft-only)
+------------------------------------------------------------
+
+FighterEffectiveness = fighter_role
+  + (speed_range * 0.6)
+  + (climb_range * 0.6)
+  + (turn_range * 0.6)
+  + (firepower_range * 0.7)
+  + (accuracy_range * 0.5)
+  + (stability_range * 0.3)
+  + (dive_safety_range * 0.3)
+
+BomberEffectiveness = bomber_role
+  + (range_range * 0.7)
+  + (stability_range * 0.6)
+  + (reliability_range * 0.6)
+  + (ammo_range * 0.3)
+  + (airframe_strength_range * 0.3)
+
+ReconEffectiveness = recon_role
+  + (range_range * 0.7)
+  + (ceiling_range * 0.6)
+  + (speed_range * 0.4)
+  + (stability_range * 0.6)
+  + (reliability_range * 0.5)
+
+Notes:
+- These are intentionally light and tunable.
+- Pilot skill and weather/AA/etc. multiply these later.
+
+------------------------------------------------------------
+B) Survivability / Loss Pressure (aircraft-only)
+------------------------------------------------------------
+
+DurabilityScore =
+  (airframe_strength_range * 0.6)
+  + (engine_durability_range * 0.5)
+  + (pilot_protection_range * 0.4)
+  + (reliability_range * 0.2)
+  - (fuel_vulnerability_range * 0.6)
+
+Higher DurabilityScore => fewer catastrophic losses.
+
+------------------------------------------------------------
+C) “Ace Request” Logic Hook (policy; not stored here)
+------------------------------------------------------------
+
+AcePreferenceScore =
+  (skill_ceiling_range * 0.7)
+  + (ace_synergy_range * 0.9)
+  + (fighter_role * 0.3)
+
+If pilot_rank >= threshold AND AcePreferenceScore >= threshold:
+  pilot may request this aircraft (or a short list).
+
+------------------------------------------------------------
+D) Maintenance Burden (base layer)
+------------------------------------------------------------
+
+OpsBurdenScore =
+  (maintenance_cost_range * 0.7)
+  + (repair_time_range * 0.6)
+  + (fuel_consumption_range * 0.5)
+  + (supply_strain_range * 0.8)
+  - (spare_parts_availability_range * 0.7)
+
+Higher OpsBurdenScore => fewer sorties, longer downtime, more resource drain.
+
+============================================================
+5) NEXT FILES (after aircraft.csv)
+============================================================
+
+Recommended separate tables (not in this file):
+1) aircraft_modifiers.csv
+- modifier_id, name, description, affected_stats, deltas, rarity, prereqs
+
+2) aircraft_instances.csv (optional, later)
+- instance_id, aircraft_id, condition, wear, assigned_squad, assigned_pilot, applied_modifiers
+
+============================================================
+END
+============================================================

@@ -1,0 +1,247 @@
+WWI Pilot RPG — AirBaseList.txt
+Version: 1.0
+Status: HISTORICALLY GROUNDED (approximate coordinates)
+Purpose: Canonical list of WWI frontline and operational air bases.
+
+Coordinate Format: Decimal Degrees (Latitude, Longitude)
+
+============================================================
+🇬🇧 BRITISH — RFC / RAF AIR BASES
+============================================================
+
+1) St-Omer Aerodrome
+Nation: Britain
+Location: St-Omer, France
+Coordinates: 50.7510 N, 2.2610 E
+Active: 1914 – 1918
+Notes: Primary RFC/RAF headquarters on the Western Front.
+
+2) Bailleul Aerodrome
+Nation: Britain
+Location: Bailleul, France
+Coordinates: 50.7360 N, 2.7340 E
+Active: 1915 – 1918
+Notes: Forward fighter and reconnaissance base near Ypres.
+
+3) Vert Galand Aerodrome
+Nation: Britain
+Location: Coquelles, France
+Coordinates: 50.9350 N, 1.8080 E
+Active: 1916 – 1918
+Notes: Coastal support and patrol operations.
+
+4) Abeele Aerodrome
+Nation: Britain
+Location: Abeele, Belgium
+Coordinates: 50.8780 N, 2.7200 E
+Active: 1916 – 1918
+Notes: Temporary forward strip near Ypres Salient.
+
+5) Bertangles Aerodrome
+Nation: Britain
+Location: Somme, France
+Coordinates: 49.9650 N, 2.3100 E
+Active: 1916 – 1918
+Notes: Somme offensive support base.
+
+6) Clairmarais Aerodrome
+Nation: Britain
+Location: Near St-Omer, France
+Coordinates: 50.7760 N, 2.3150 E
+Active: 1915 – 1917
+Notes: Early RFC field, later secondary use.
+
+7) Le Crotoy Aerodrome
+Nation: Britain
+Location: Somme Bay, France
+Coordinates: 50.2170 N, 1.6240 E
+Active: 1915 – 1918
+Notes: Coastal patrol and naval cooperation.
+
+============================================================
+🇫🇷 FRENCH — AÉRONAUTIQUE MILITAIRE
+============================================================
+
+1) Le Bourget
+Nation: France
+Location: Paris, France
+Coordinates: 48.9694 N, 2.4414 E
+Active: 1914 – 1918
+Notes: Major logistics, testing, and operational hub.
+
+2) Verdun–Souilly Aerodrome
+Nation: France
+Location: Souilly, Meuse
+Coordinates: 49.0250 N, 5.2950 E
+Active: 1916 – 1918
+Notes: Verdun sector operations.
+
+3) Toul Aerodrome
+Nation: France
+Location: Toul, Lorraine
+Coordinates: 48.5990 N, 5.9810 E
+Active: 1915 – 1918
+Notes: Key French and later AEF base.
+
+4) Châlons-sur-Marne
+Nation: France
+Location: Marne
+Coordinates: 48.9560 N, 4.3670 E
+Active: 1914 – 1918
+Notes: Major training and reinforcement base.
+
+5) Luxeuil-les-Bains
+Nation: France
+Location: Haute-Saône
+Coordinates: 47.7820 N, 6.3650 E
+Active: 1915 – 1918
+Notes: Famous fighter base (Guynemer).
+
+6) Villeneuve-les-Vertus
+Nation: France
+Location: Marne
+Coordinates: 48.9650 N, 3.9880 E
+Active: 1917 – 1918
+Notes: Bomber and recon operations.
+
+7) Amanty Aerodrome
+Nation: France
+Location: Meuse
+Coordinates: 48.5260 N, 5.5980 E
+Active: 1918
+Notes: Late-war forward operations.
+
+============================================================
+🇩🇪 GERMANY — LUFTSTREITKRÄFTE
+============================================================
+
+1) Lechelle Aerodrome
+Nation: Germany
+Location: Near Cambrai, France
+Coordinates: 50.0840 N, 3.1480 E
+Active: 1917 – 1918
+Notes: Jagdstaffel operations during Cambrai battles.
+
+2) St. Quentin Aerodrome
+Nation: Germany
+Location: Aisne, France
+Coordinates: 49.8480 N, 3.2870 E
+Active: 1916 – 1918
+Notes: Major German air hub.
+
+3) Marckebeke Aerodrome
+Nation: Germany
+Location: Flanders, Belgium
+Coordinates: 50.9310 N, 3.0830 E
+Active: 1916 – 1918
+Notes: Fighter and recon squadrons.
+
+4) Douai Aerodrome
+Nation: Germany
+Location: Nord, France
+Coordinates: 50.3700 N, 3.0800 E
+Active: 1916 – 1918
+Notes: Central Jagdstaffel concentration.
+
+5) Metz-Frescaty
+Nation: Germany
+Location: Alsace-Lorraine
+Coordinates: 49.0710 N, 6.1310 E
+Active: 1915 – 1918
+Notes: Southern front operations.
+
+6) Colmar Aerodrome
+Nation: Germany
+Location: Alsace
+Coordinates: 48.0950 N, 7.3510 E
+Active: 1915 – 1918
+Notes: Vosges and Rhine sector patrols.
+
+7) Rumbeke Aerodrome
+Nation: Germany
+Location: Belgium
+Coordinates: 50.9170 N, 3.1570 E
+Active: 1917 – 1918
+Notes: Fighter deployment base.
+
+============================================================
+🇮🇹 ITALY — REGIA AERONAUTICA (WWI)
+============================================================
+
+1) Aviano Airfield
+Nation: Italy
+Location: Friuli, Italy
+Coordinates: 46.0710 N, 12.5940 E
+Active: 1917 – 1918
+Notes: Operations against Austro-Hungarian forces.
+
+2) Istrana Airfield
+Nation: Italy
+Location: Veneto
+Coordinates: 45.6880 N, 12.0990 E
+Active: 1917 – 1918
+Notes: Fighter operations on Piave front.
+
+3) Ghedi Aerodrome
+Nation: Italy
+Location: Lombardy
+Coordinates: 45.4040 N, 10.2770 E
+Active: 1916 – 1918
+Notes: Bomber staging field.
+
+4) Campoformido
+Nation: Italy
+Location: Friuli
+Coordinates: 46.0200 N, 13.1740 E
+Active: 1915 – 1918
+Notes: Early Italian aviation center.
+
+5) Arcade Airfield
+Nation: Italy
+Location: Veneto
+Coordinates: 45.7810 N, 12.2260 E
+Active: 1917 – 1918
+Notes: Piave sector operations.
+
+============================================================
+🇺🇸 UNITED STATES — AEF AIR SERVICE
+============================================================
+
+1) La Ferté-sous-Jouarre
+Nation: USA
+Location: Seine-et-Marne, France
+Coordinates: 48.9510 N, 3.1310 E
+Active: 1917 – 1918
+Notes: Initial AEF Air Service HQ.
+
+2) Souilly Aerodrome
+Nation: USA
+Location: Meuse, France
+Coordinates: 49.0250 N, 5.2950 E
+Active: 1918
+Notes: First Army Air Service.
+
+3) Saizerais Aerodrome
+Nation: USA
+Location: Lorraine, France
+Coordinates: 48.7920 N, 6.0360 E
+Active: 1918
+Notes: Fighter and recon squadrons.
+
+4) Colombey-les-Belles
+Nation: USA
+Location: Meurthe-et-Moselle
+Coordinates: 48.5230 N, 5.9060 E
+Active: 1918 – 1919
+Notes: Largest AEF air base.
+
+5) Neufchâteau Aerodrome
+Nation: USA
+Location: Vosges, France
+Coordinates: 48.3550 N, 5.6970 E
+Active: 1918
+Notes: Training and operations.
+
+============================================================
+END OF FILE
+============================================================

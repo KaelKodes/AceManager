@@ -1,0 +1,250 @@
+WWI Pilot RPG — NationalAI.txt
+Version: 1.0
+Purpose: Defines how the Nation AI functions as a living war machine and how it evaluates, supports, and pressures the player.
+
+============================================================
+1) NATIONAL AI ROLE
+============================================================
+
+The Nation AI represents:
+- High Command
+- Industrial capacity
+- Logistics networks
+- Strategic planning
+- Political pressure
+
+The player does NOT control the Nation.
+The player influences it.
+
+The Nation:
+- Plans the war
+- Allocates resources
+- Assigns priorities
+- Judges performance
+- Responds to success and failure
+
+============================================================
+2) NATIONAL AI TIME SCALE
+============================================================
+
+The Nation AI operates on MULTIPLE TIME SCALES:
+
+- Daily: reacts to mission outcomes
+- Weekly: adjusts allocations and priorities
+- Monthly: shifts strategic focus
+- Event-driven: responds to crises and opportunities
+
+The player mostly feels DAILY and WEEKLY effects.
+
+============================================================
+3) NATIONAL STRATEGIC GOALS
+============================================================
+
+At any given time, the Nation AI maintains several weighted goals:
+
+Examples:
+- Gain air superiority in Sector X
+- Support ground offensive
+- Defend critical supply routes
+- Suppress enemy bombing
+- Train replacement pilots
+- Preserve elite squadrons
+
+Goals shift based on:
+- Frontline situation
+- Losses
+- Political pressure
+- Time period in the war
+
+============================================================
+4) PLAYER BASE EVALUATION
+============================================================
+
+Each player base is evaluated continuously using:
+
+------------------------------------------------------------
+A) PERFORMANCE
+------------------------------------------------------------
+
+- Mission success rates
+- Loss ratios
+- Mission difficulty
+- Willingness to accept risk
+
+------------------------------------------------------------
+B) RELIABILITY
+------------------------------------------------------------
+
+- Ability to sustain operations
+- Efficient resource use
+- Low abort rates
+- Stable logistics
+
+------------------------------------------------------------
+C) CAPABILITY
+------------------------------------------------------------
+
+- Base ratings (especially Transport, Maintenance, Operations)
+- Aircraft types supported
+- Training effectiveness
+
+------------------------------------------------------------
+D) STRATEGIC POSITION
+------------------------------------------------------------
+
+- Location relative to front
+- Proximity to supply routes
+- Vulnerability
+- Strategic importance
+
+============================================================
+5) RESOURCE ALLOCATION
+============================================================
+
+The Nation allocates resources, not money.
+
+Allocations include:
+- Fuel
+- Ammunition
+- Spare parts
+- Aircraft replacements
+- Personnel
+- Specialist staff
+
+Allocation priority increases when:
+- Performance is strong
+- Base ratings support throughput
+- Strategic goals align
+
+Poor performance or inefficiency reduces priority.
+
+============================================================
+6) AIRCRAFT ALLOCATION
+============================================================
+
+Aircraft are scarce, especially advanced models.
+
+The Nation decides:
+- Which bases receive new aircraft
+- How quickly replacements arrive
+- Which bases get experimental or late-war types
+
+Factors:
+- Base capability
+- Pilot quality
+- Loss rates
+- Strategic importance
+
+Older aircraft remain in circulation longer at lower-priority bases.
+
+============================================================
+7) NATIONAL MISSION PLANNING
+============================================================
+
+The Nation AI plans missions independently of the player.
+
+These include:
+- Ground support
+- Strategic bombing
+- Recon operations
+- Convoy protection
+- Enemy suppression
+
+The player may be:
+- Assigned support missions
+- Asked to coordinate
+- Given optional objectives
+- Temporarily subordinated to higher command
+
+Refusing orders is allowed, but tracked.
+
+============================================================
+8) TROOP & STAFF ALLOCATION
+============================================================
+
+The Nation controls:
+- Pilot assignments
+- Instructor distribution
+- Staff transfers
+- Medical and logistics specialists
+
+High-performing bases:
+- Attract better personnel
+- Retain veterans
+- Receive reinforcements sooner
+
+Low-performing bases may:
+- Lose personnel
+- Be stripped to reinforce others
+- Be downgraded
+
+============================================================
+9) FACILITY & INFRASTRUCTURE MANAGEMENT
+============================================================
+
+The Nation also manages:
+- Rail lines
+- Depots
+- Ports
+- Rear-area airfields
+- Training centers
+
+Damage or overload in these systems:
+- Reduces national throughput
+- Affects all bases
+- Can create cascading shortages
+
+Player missions can:
+- Protect national infrastructure
+- Disrupt enemy logistics
+- Relieve pressure elsewhere
+
+============================================================
+10) PRESSURE & CONSEQUENCES
+============================================================
+
+The Nation applies pressure through:
+- Increased expectations
+- Riskier missions
+- Reduced margin for error
+- Political oversight
+
+Failure does not end the game immediately.
+Instead, it creates:
+- Reassignment
+- Loss of priority
+- Narrative consequences
+- Strategic retreat
+
+============================================================
+11) TRANSPARENCY TO PLAYER
+============================================================
+
+The player is NEVER shown raw AI values.
+
+Instead, feedback is delivered via:
+- Command messages
+- Allocation changes
+- Mission availability
+- Officer commentary
+- News reports
+
+The player should FEEL the Nation’s mood.
+
+============================================================
+12) DESIGN GOAL
+============================================================
+
+The Nation AI must feel:
+- Rational
+- Impersonal
+- Sometimes unfair
+- Ultimately understandable
+
+It is not your enemy.
+It is not your friend.
+It is the war.
+
+============================================================
+END OF FILE
+============================================================

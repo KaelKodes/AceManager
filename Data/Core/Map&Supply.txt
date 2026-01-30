@@ -1,0 +1,235 @@
+WWI Pilot RPG — StrategicMapAndSupply.txt
+Version: 1.0
+Purpose: Defines how geography, supply routes, and infrastructure connect the Nation AI to player airbases.
+
+============================================================
+1) STRATEGIC MAP OVERVIEW
+============================================================
+
+The strategic map represents:
+- Front lines
+- National territory
+- Supply infrastructure
+- Airbases (player and AI-controlled)
+- Key logistical connections
+
+The map is NOT a tactical map.
+It is an operational abstraction.
+
+============================================================
+2) MAP ELEMENT TYPES
+============================================================
+
+------------------------------------------------------------
+A) AIRBASES
+------------------------------------------------------------
+
+Airbases exist at fixed geographic locations.
+
+Each airbase has:
+- Coordinates
+- Nation ownership
+- Base ratings
+- Supply connections
+- Strategic importance value
+
+Only ONE airbase is player-managed.
+Others are AI-managed.
+
+------------------------------------------------------------
+B) SUPPLY NODES
+------------------------------------------------------------
+
+Supply nodes represent:
+- Rail depots
+- Ports
+- Industrial centers
+- Major logistics hubs
+
+Supply nodes generate:
+- Fuel
+- Ammunition
+- Spare parts
+- Personnel throughput
+
+Supply nodes do NOT belong to the player.
+
+------------------------------------------------------------
+C) CONNECTIONS (SUPPLY ROUTES)
+------------------------------------------------------------
+
+Connections link nodes and airbases.
+
+Connection types:
+- Rail
+- Road
+- River (optional, region-specific)
+- Coastal sea lanes
+
+Each connection has:
+- Throughput capacity
+- Distance
+- Vulnerability
+- Repair time if disrupted
+
+============================================================
+3) SUPPLY FLOW MODEL
+============================================================
+
+Supplies flow:
+SUPPLY NODE → CONNECTION → AIRBASE
+
+Flow is limited by:
+- Connection throughput
+- Distance
+- Weather
+- Enemy disruption
+- Base Transport Access rating
+
+No stock appears magically.
+
+============================================================
+4) CONNECTION TYPES
+============================================================
+
+------------------------------------------------------------
+A) RAIL
+------------------------------------------------------------
+
+- Highest throughput
+- Fast delivery
+- Highly vulnerable to bombing
+- Long repair times
+
+Rail is the backbone of sustained operations.
+
+------------------------------------------------------------
+B) ROAD
+------------------------------------------------------------
+
+- Moderate throughput
+- Weather-sensitive
+- More flexible
+- Easier to repair
+
+Roads keep bases alive when rail is damaged.
+
+------------------------------------------------------------
+C) RIVER / COASTAL
+------------------------------------------------------------
+
+- Region-dependent
+- High volume
+- Slow
+- Requires ports or docks
+
+Used mainly for fuel and bulk supplies.
+
+============================================================
+5) DISRUPTION & DAMAGE
+============================================================
+
+Connections can be disrupted by:
+- Enemy bombing
+- Sabotage
+- Overuse
+- Weather events
+- Frontline movement
+
+Disruption effects:
+- Reduced throughput
+- Delayed deliveries
+- Increased losses in transit
+
+Repairs take time and resources.
+
+============================================================
+6) PLAYER INTERACTION WITH THE MAP
+============================================================
+
+The player does NOT directly manage infrastructure.
+
+However, the player can:
+- Fly escort missions
+- Suppress enemy airfields
+- Conduct interdiction missions
+- Protect convoys
+- Scout enemy logistics
+
+These actions influence:
+- Supply safety
+- National throughput
+- Strategic pressure
+
+============================================================
+7) FRONTLINE MOVEMENT
+============================================================
+
+As ground fronts advance or retreat:
+- New airbases become viable
+- Others are abandoned
+- Supply routes shift
+- Strategic priorities change
+
+The player may be ordered to:
+- Relocate
+- Expand forward
+- Hold a vulnerable position
+- Withdraw under pressure
+
+============================================================
+8) STRATEGIC CHOKE POINTS
+============================================================
+
+Some connections and nodes are designated as choke points.
+
+Choke points:
+- Carry disproportionate supply
+- Are heavily contested
+- Generate high-risk, high-reward missions
+
+Losing a choke point affects many bases at once.
+
+============================================================
+9) NATIONAL AI USE OF THE MAP
+============================================================
+
+The Nation AI:
+- Evaluates map control
+- Adjusts supply routes
+- Reassigns bases
+- Shifts priorities based on pressure
+
+The map is the AI’s primary planning surface.
+
+============================================================
+10) PLAYER FEEDBACK
+============================================================
+
+The player is informed of map effects through:
+- Supply delays
+- Mission availability changes
+- Command briefings
+- News reports
+- Visual map indicators
+
+Exact numbers are hidden.
+Effects are felt, not calculated manually.
+
+============================================================
+11) DESIGN GOAL
+============================================================
+
+Geography must matter.
+
+The player should learn:
+- Why supplies are late
+- Why missions increase or decrease
+- Why a base suddenly struggles
+- Why command attention shifts
+
+The map is the silent hand behind every decision.
+
+============================================================
+END OF FILE
+============================================================

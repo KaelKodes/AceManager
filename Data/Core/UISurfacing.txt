@@ -1,0 +1,228 @@
+WWI Pilot RPG — UISurfacing.txt
+Version: 1.0
+Purpose: Defines how information is shown to the player and how complex systems remain readable and fair.
+
+============================================================
+1) CORE UI PHILOSOPHY
+============================================================
+
+The UI must:
+- Inform without overwhelming
+- Explain outcomes without exposing raw math
+- Make the player feel responsible, not confused
+- Preserve uncertainty where appropriate
+
+The UI is not a dashboard of numbers.
+It is a command interface.
+
+============================================================
+2) INFORMATION TIERS
+============================================================
+
+All information is divided into three tiers.
+
+------------------------------------------------------------
+TIER 1 — ALWAYS VISIBLE
+------------------------------------------------------------
+
+Shown every day without player action.
+
+Includes:
+- Current date and location
+- Weather
+- Base summary (ratings I–V)
+- Aircraft availability
+- Pilot readiness
+- Active shortages or bottlenecks
+
+This answers:
+“Can we operate today?”
+
+------------------------------------------------------------
+TIER 2 — CONTEXTUAL DETAILS
+------------------------------------------------------------
+
+Shown when the player clicks or hovers.
+
+Includes:
+- Why a base rating is limited
+- Why a resource is low
+- Why a mission is unavailable
+- Why a pilot is grounded or fatigued
+- Why command expectations changed
+
+This answers:
+“Why is this happening?”
+
+------------------------------------------------------------
+TIER 3 — POST-EVENT EXPLANATION
+------------------------------------------------------------
+
+Shown after missions and events.
+
+Includes:
+- What influenced success or failure
+- Which pilots or aircraft mattered
+- Which base ratings helped or hurt
+- Strategic consequences
+- Command reaction
+
+This answers:
+“What did my decisions cause?”
+
+============================================================
+3) BASE UI PRESENTATION
+============================================================
+
+The base is presented as a STATUS PANEL, not a map.
+
+Displayed:
+- Base type (Grass Strip / Forward Base / Regional Hub)
+- Progress level (Roman numerals)
+- Base ratings (A–I) shown as bars or icons
+- Warnings for overstress or shortages
+
+Exact numbers are hidden.
+Relative strength and direction are clear.
+
+============================================================
+4) MISSION PLANNING UI
+============================================================
+
+Mission planning is presented as a single, focused screen.
+
+The player selects:
+- Mission type
+- Target / distance
+- Aircraft and pilots
+- Risk posture
+
+The UI clearly displays:
+- Expected duration
+- Relative risk (Low / Medium / High)
+- Resource strain (icons, not numbers)
+- Fatigue impact
+
+The UI NEVER promises outcomes.
+It communicates likelihood and risk.
+
+============================================================
+5) MISSION RESULTS UI
+============================================================
+
+After a mission, the player sees:
+
+- Result band (Success, Failure, etc.)
+- Aircraft losses or damage
+- Pilot status changes
+- Strategic impact summary
+- Notable moments (kills, saves, mistakes)
+
+Highlighted callouts explain:
+- Which skills triggered
+- Which ratings mattered
+- Where luck intervened
+
+============================================================
+6) NATIONAL AI FEEDBACK
+============================================================
+
+The Nation is communicated indirectly.
+
+Methods:
+- Command messages
+- Allocation changes
+- Mission availability
+- Officer commentary
+- News reports
+
+The UI never shows:
+- Approval scores
+- Hidden reputation meters
+- AI priorities directly
+
+The player infers the Nation’s mood through consequences.
+
+============================================================
+7) STRATEGIC MAP UI
+============================================================
+
+The strategic map is optional and abstracted.
+
+Shown:
+- Airbases
+- Supply nodes
+- Major routes
+- Disrupted connections
+- Frontline shifts
+
+Not shown:
+- Exact throughput values
+- Enemy plans
+- Hidden AI calculations
+
+The map explains WHY logistics change, not HOW MUCH.
+
+============================================================
+8) NARRATIVE & EVENTS UI
+============================================================
+
+Narrative content appears as:
+- Briefings
+- Bulletins
+- Letters
+- Conversations
+- After-action summaries
+
+Major events are clearly flagged.
+Historical names are highlighted respectfully.
+
+The UI never says:
+“You changed history.”
+
+It shows:
+“This event unfolded differently.”
+
+============================================================
+9) FAILURE & FAIRNESS
+============================================================
+
+When something goes wrong, the UI must always show:
+
+- At least one clear contributing factor
+- Whether the failure was due to:
+  - Logistics
+  - Fatigue
+  - Planning
+  - Risk
+  - Enemy strength
+  - Weather
+
+Randomness is acknowledged, never hidden.
+
+============================================================
+10) PLAYER TRUST GOAL
+============================================================
+
+The player should always feel:
+
+- Informed enough to make decisions
+- Surprised, but not cheated
+- Responsible for outcomes
+- Confident that preparation matters
+
+If the player loses, they should understand why.
+
+============================================================
+11) DESIGN GOAL
+============================================================
+
+A player who understands the UI
+should be able to explain the game to someone else
+without referencing formulas or hidden systems.
+
+The UI teaches the game by existing.
+
+============================================================
+END OF FILE
+============================================================

@@ -1,0 +1,227 @@
+WWI Pilot RPG — BaseRatings.txt
+Version: 1.0
+Status: STRUCTURE LOCKED
+Purpose: Defines the base-level ratings that describe an airbase’s operational capability.
+Scope: Applies to all player-managed airbases (Grass Strip → Forward Base → Regional Hub).
+
+============================================================
+1) CORE DESIGN PRINCIPLE
+============================================================
+
+An airbase is defined by a set of RATINGS, not by individual buildings.
+
+- Ratings range from Level I to Level V.
+- Ratings improve through investment, time, and sustained operation.
+- Ratings may advance unevenly.
+- Higher ratings increase both capability and logistical pressure.
+- Damage, overuse, or disruption can temporarily reduce effective rating.
+
+Modules, facilities, and improvements exist to RAISE these ratings.
+
+============================================================
+2) BASE PROGRESSION CONTEXT
+============================================================
+
+Each base progresses through three archetypes:
+
+- Grass Strip: Levels I – V
+- Forward Base: Levels I – V
+- Regional Hub: Levels I – V
+
+A base must progress through all five levels of one archetype
+before advancing to the next.
+
+Ratings do not reset when advancing archetype, but their EFFECTS scale.
+
+============================================================
+3) BASE RATINGS (LEVEL I – V)
+============================================================
+
+------------------------------------------------------------
+A) RUNWAY
+------------------------------------------------------------
+
+Represents:
+- Surface quality
+- Drainage
+- Length and markings
+
+Affects:
+- Aircraft accident rate
+- Aircraft weight/class limits
+- Sortie reliability
+- Weather sensitivity
+
+Low levels restrict heavy aircraft and increase losses.
+High levels enable safe, sustained operations.
+
+------------------------------------------------------------
+B) LODGING
+------------------------------------------------------------
+
+Represents:
+- Living quarters
+- Sanitation
+- Heating and shelter
+
+Affects:
+- Personnel capacity
+- Fatigue recovery
+- Morale decay
+- Attrition during bad weather
+
+Overcrowding causes cascading fatigue and morale penalties.
+
+------------------------------------------------------------
+C) MAINTENANCE
+------------------------------------------------------------
+
+Represents:
+- Workshops
+- Tools
+- Skilled ground crews
+- Spare part handling
+
+Affects:
+- Repair speed
+- Aircraft downtime
+- Spare part efficiency
+- Chance of mechanical failure
+
+Low maintenance ratings ground aircraft faster than combat losses.
+
+------------------------------------------------------------
+D) FUEL STORAGE
+------------------------------------------------------------
+
+Represents:
+- On-hand fuel capacity
+- Storage safety
+- Handling efficiency
+
+Affects:
+- Maximum fuel stock
+- Sortie surge capability
+- Vulnerability to supply delays
+- Losses from bombing or accidents
+
+Low fuel storage forces conservative operations.
+
+------------------------------------------------------------
+E) AMMUNITION STORAGE
+------------------------------------------------------------
+
+Represents:
+- Ammunition stockpiles
+- Bomb storage
+- Handling safety
+
+Affects:
+- Mission availability (especially bombing)
+- Sustained combat capability
+- Risk of catastrophic loss
+
+Low levels prioritize fighters over bombers.
+
+------------------------------------------------------------
+F) OPERATIONS / COMMAND
+------------------------------------------------------------
+
+Represents:
+- Planning staff
+- Intelligence integration
+- Briefing quality
+- Communications
+
+Affects:
+- Mission efficiency
+- Loss mitigation
+- Target selection
+- Coordination bonuses
+
+High operations ratings reduce randomness in outcomes.
+
+------------------------------------------------------------
+G) MEDICAL
+------------------------------------------------------------
+
+Represents:
+- First aid capacity
+- Surgical capability
+- Recovery infrastructure
+
+Affects:
+- Injury recovery time
+- Pilot survival rates
+- Veteran retention
+- Long-term manpower quality
+
+Low medical ratings turn minor wounds into fatalities.
+
+------------------------------------------------------------
+H) TRANSPORT ACCESS
+------------------------------------------------------------
+
+Represents:
+- Road quality
+- Rail access
+- Proximity to depots
+- Local infrastructure
+
+Affects:
+- Supply throughput
+- Resupply delays
+- Allocation priority from command
+- Strategic importance of the base
+
+Transport access is the primary limiter on growth.
+
+------------------------------------------------------------
+I) TRAINING FACILITIES
+------------------------------------------------------------
+
+Represents:
+- Formal and informal training processes
+- Instructor pilots
+- Drills and exercises
+- Knowledge transfer
+
+Affects:
+- Pilot stat growth rate
+- Rookie stabilization
+- Skill acquisition chance
+- Staff NPC effectiveness
+- Replacement quality
+
+Training raises the floor, not the ceiling.
+Aces are still forged in combat.
+
+============================================================
+4) RATING STRESS & DEGRADATION
+============================================================
+
+Ratings can be temporarily reduced by:
+- Overuse
+- Supply shortages
+- Enemy action
+- Weather
+- Personnel exhaustion
+
+Stress effects stack and recover over time if pressure is relieved.
+
+============================================================
+5) STRATEGIC CONSEQUENCES
+============================================================
+
+The Nation evaluates a base based on its ratings:
+
+- High Transport + Maintenance → more aircraft allocations
+- High Training → better pilots and staff
+- High Operations → sensitive missions assigned
+- Poor Lodging or Medical → command concern
+
+Your base competes implicitly with others for attention and resources.
+
+============================================================
+END OF FILE
+============================================================

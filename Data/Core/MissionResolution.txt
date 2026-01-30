@@ -1,0 +1,237 @@
+WWI Pilot RPG — MissionResolutionLogic.txt
+Version: 1.0
+Status: CORE SIMULATION LOCKED
+Purpose: Defines how missions are resolved using pilots, aircraft, base ratings, and context.
+
+============================================================
+1) DESIGN GOAL
+============================================================
+
+Mission resolution must:
+- Be understandable to the player
+- Reward good preparation
+- Punish overreach
+- Produce believable WWI outcomes
+- Generate stories, not just numbers
+
+No single factor determines success.
+Outcomes emerge from combined pressure.
+
+============================================================
+2) MISSION RESOLUTION OVERVIEW
+============================================================
+
+Each mission resolves in FOUR PHASES:
+
+1) Readiness Check
+2) Contact & Engagement
+3) Outcome Determination
+4) Consequences & Feedback
+
+Each phase can modify or limit the next.
+
+============================================================
+3) PHASE 1 — READINESS CHECK
+============================================================
+
+Before combat, the game evaluates whether the mission
+launches as planned.
+
+Factors checked:
+
+- Aircraft availability
+- Pilot fatigue
+- Fuel availability
+- Weather
+- Runway rating
+- Maintenance rating
+
+Possible results:
+- Full launch
+- Reduced launch (fewer aircraft)
+- Delayed launch
+- Mission aborted
+
+Failures here are logistical, not combat-related.
+
+============================================================
+4) PHASE 2 — CONTACT & ENGAGEMENT
+============================================================
+
+Determines IF and HOW the mission encounters the enemy.
+
+Factors:
+- Mission type
+- Distance
+- Enemy activity level
+- Operations rating
+- Pilot Offensive Awareness
+- Pilot Defensive Awareness
+- Weather
+
+Possible results:
+- No contact
+- Limited contact
+- Full engagement
+- Ambush (rare, dangerous)
+
+This phase determines combat intensity.
+
+============================================================
+5) PHASE 3 — OUTCOME DETERMINATION
+============================================================
+
+Outcome is resolved using combined strength comparisons.
+
+------------------------------------------------------------
+A) FRIENDLY EFFECTIVENESS SCORE
+------------------------------------------------------------
+
+Calculated from:
+- Aircraft combat stats
+- Pilot derived ratings (Dogfight, Escort, Recon, etc.)
+- Pilot skills (Ace, Wingman, Overwatch, etc.)
+- Formation cohesion
+- Risk posture
+- Operations rating
+- Training rating
+
+------------------------------------------------------------
+B) ENEMY EFFECTIVENESS SCORE
+------------------------------------------------------------
+
+Calculated from:
+- Known or estimated enemy strength
+- Enemy air presence
+- Mission location
+- Time period
+- Surprise factors
+
+------------------------------------------------------------
+C) RESULT BAND
+------------------------------------------------------------
+
+Comparing both sides produces a result band:
+
+- Decisive Success
+- Success
+- Marginal Success
+- Stalemate
+- Marginal Failure
+- Failure
+- Disaster
+
+The band determines rewards and losses.
+
+============================================================
+6) PHASE 4 — CONSEQUENCES
+============================================================
+
+Based on the result band, the following are resolved:
+
+------------------------------------------------------------
+A) LOSSES
+------------------------------------------------------------
+
+- Aircraft damaged or destroyed
+- Pilots wounded, killed, or missing
+- Fatigue accumulation
+
+Medical and Maintenance ratings modify survival and recovery.
+
+------------------------------------------------------------
+B) RESOURCE IMPACT
+------------------------------------------------------------
+
+- Fuel consumed
+- Ammunition consumed
+- Maintenance wear applied
+- Spare part strain added
+
+------------------------------------------------------------
+C) PILOT DEVELOPMENT
+------------------------------------------------------------
+
+Pilots may:
+- Gain experience
+- Improve stats
+- Acquire or reinforce skills
+- Suffer confidence loss if failures stack
+
+Training rating strongly affects this.
+
+------------------------------------------------------------
+D) STRATEGIC EFFECT
+------------------------------------------------------------
+
+Mission contributes to:
+- Air superiority
+- Ground operations
+- Supply line safety
+- Intelligence quality
+
+Effects accumulate over days, not instantly.
+
+============================================================
+7) ROLE OF KEY SKILLS
+============================================================
+
+Key skills modify specific moments:
+
+- Ace: increases kill and survival chance in engagements
+- Wingman: increases assist and save chance for paired allies
+- Overseer: reduces surprise and ambush risk for squad
+- Pack Hunter: increases effectiveness in multi-aircraft attacks
+- Lone Wolf: boosts solo actions, reduces cohesion
+- Steady: reduces performance loss under stress
+- Hotspur: increases engagement frequency and risk
+- Flight Leader: increases cohesion and reduces errors
+- Instructor: boosts post-mission improvement
+- Survivor: increases disengagement success
+
+Skills never guarantee outcomes — they tilt probability.
+
+============================================================
+8) FAILURE IS NOT ALWAYS BAD
+============================================================
+
+Even failed missions can:
+- Gain intelligence
+- Train pilots
+- Build reputation for effort
+- Delay enemy action
+
+Command values persistence, not perfection.
+
+============================================================
+9) PLAYER FEEDBACK
+============================================================
+
+After each mission, the player is shown:
+
+- What went right
+- What went wrong
+- Which factors mattered
+- How base ratings influenced results
+- How command reacted
+
+No opaque results.
+No unexplained losses.
+
+============================================================
+10) DESIGN PHILOSOPHY
+============================================================
+
+The player should learn naturally:
+
+- When to push
+- When to rest
+- When logistics matter more than bravery
+- When one more mission is too many
+
+The war is not won in a day.
+Neither is a squadron.
+
+============================================================
+END OF FILE
+============================================================

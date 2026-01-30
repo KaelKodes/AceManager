@@ -1,0 +1,91 @@
+[gd_scene load_steps=2 format=3 uid="uid://command_map_001"]
+
+[ext_resource type="Script" path="res://Script/UI/CommandMapPanel.cs" id="1_map"]
+
+[node name="CommandMapPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_map")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.9)
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -300.0
+offset_right = 400.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="HBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="SectorLabel" type="Label" parent="Panel/VBoxContainer/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "COMMAND MAP"
+
+[node name="CloseButton" type="Button" parent="Panel/VBoxContainer/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+text = "X"
+
+[node name="HSeparator" type="HSeparator" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="ContentHBox" type="HBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 15
+
+[node name="MapArea" type="Control" parent="Panel/VBoxContainer/ContentHBox"]
+unique_name_in_owner = true
+clip_contents = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MapBackground" type="ColorRect" parent="Panel/VBoxContainer/ContentHBox/MapArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.08, 0.12, 0.08, 1)
+
+[node name="LegendPanel" type="VBoxContainer" parent="Panel/VBoxContainer/ContentHBox"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+
+[node name="LegendTitle" type="Label" parent="Panel/VBoxContainer/ContentHBox/LegendPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "MAP KEY"
+
+[node name="LegendLabel" type="Label" parent="Panel/VBoxContainer/ContentHBox/LegendPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 11
+text = "★ Home Base
+◆ Supply
+✚ Hospital"

@@ -1,0 +1,308 @@
+WWI Pilot RPG — TimeAndMissions.txt
+Version: 1.0
+Status: CORE LOOP LOCKED
+Purpose: Defines the daily time model, mission structure, and how missions consume resources and influence the wider war.
+
+============================================================
+1) TIME MODEL OVERVIEW
+============================================================
+
+The game operates on a DAILY CALENDAR.
+
+- Time advances one day at a time.
+- No continuous simulation.
+- Nothing meaningful happens between days.
+- All actions resolve as EVENTS on specific dates.
+
+The player controls when to advance the day.
+
+============================================================
+2) DAILY STRUCTURE
+============================================================
+
+Each in-game day follows this sequence:
+
+------------------------------------------------------------
+A) DAY START
+------------------------------------------------------------
+
+The player is shown:
+- Date (e.g. Feb 8, 1917)
+- Location (current airbase)
+- Weather
+- Base status summary
+- Scheduled events for the day
+
+------------------------------------------------------------
+B) PLAYER MANAGEMENT PHASE
+------------------------------------------------------------
+
+Before events resolve, the player may:
+
+- Assign or cancel missions
+- Select aircraft and pilots for missions
+- Schedule training
+- Adjust base investment priorities
+- Reassign personnel
+- Stand down squadrons to recover fatigue
+
+No actions are hidden.
+No time passes during this phase.
+
+------------------------------------------------------------
+C) EVENT RESOLUTION PHASE
+------------------------------------------------------------
+
+Scheduled events resolve, including:
+- Missions flying and resolving
+- Training completing
+- Construction progress
+- Supply arrivals or delays
+- Recovery of wounded personnel
+- Enemy actions (if triggered)
+
+Results are presented clearly.
+
+------------------------------------------------------------
+D) END OF DAY
+------------------------------------------------------------
+
+The player confirms:
+> “Advance to Next Day”
+
+Only then does the calendar advance.
+
+============================================================
+3) MISSIONS AS PRIMARY EVENTS
+============================================================
+
+A mission is the primary “gameplay event” of the simulation.
+
+Missions are:
+- Planned intentionally
+- Costly in resources
+- Risky in personnel and aircraft
+- Influential at the strategic level
+
+You do NOT simulate patrols minute-by-minute.
+You simulate outcomes.
+
+============================================================
+4) MISSION PLANNING PARAMETERS
+============================================================
+
+When creating a mission, the player selects:
+
+------------------------------------------------------------
+A) MISSION TYPE
+------------------------------------------------------------
+
+Common mission types:
+
+- Local Patrol
+- Interception
+- Escort
+- Reconnaissance
+- Bombing
+- Special / Historical
+
+Each type defines:
+- Expected duration
+- Risk profile
+- Strategic impact
+- Resource intensity
+
+------------------------------------------------------------
+B) FORCE COMMITMENT
+------------------------------------------------------------
+
+The player chooses:
+- Number of aircraft
+- Which squadrons
+- Which pilots
+
+Larger forces:
+- Increase success chance
+- Increase resource cost
+- Increase wear and fatigue
+- Increase potential losses
+
+------------------------------------------------------------
+C) DISTANCE / TARGET
+------------------------------------------------------------
+
+Distance is measured from base to target.
+
+Distance affects:
+- Mission duration
+- Fuel consumption
+- Fatigue accumulation
+- Abort probability
+
+Distance is limited by:
+- Aircraft distance_range
+- Fuel availability
+- Weather
+- Runway rating
+
+------------------------------------------------------------
+D) RISK POSTURE (OPTIONAL, SIMPLE)
+------------------------------------------------------------
+
+Players may select:
+- Conservative
+- Standard
+- Aggressive
+
+This modifies:
+- Engagement likelihood
+- Loss probability
+- Strategic impact
+
+============================================================
+5) REALISTIC MISSION DURATIONS
+============================================================
+
+Mission durations are abstracted, but historically grounded.
+
+Typical ranges:
+
+- Local Patrol: 30–60 minutes
+- Interception: 45–90 minutes
+- Escort: 1–2 hours
+- Reconnaissance: 1–3 hours
+- Bombing: 2–4 hours
+
+Duration is not simulated directly.
+It feeds into cost and fatigue calculations.
+
+============================================================
+6) RESOURCE COSTS PER MISSION
+============================================================
+
+Each mission consumes the following resources:
+
+------------------------------------------------------------
+A) FUEL
+------------------------------------------------------------
+
+Fuel cost scales with:
+- Number of aircraft
+- Distance
+- Aircraft fuel_consumption
+- Mission duration
+
+Fuel shortages:
+- Reduce mission options
+- Force early aborts
+- Increase accident risk
+
+------------------------------------------------------------
+B) AMMUNITION
+------------------------------------------------------------
+
+Ammo cost depends on:
+- Mission type
+- Engagement intensity
+- Aircraft weapon systems
+
+Bombing missions consume significantly more ammunition.
+
+------------------------------------------------------------
+C) MAINTENANCE WEAR (SPARE PART PRESSURE)
+------------------------------------------------------------
+
+Each sortie adds wear to aircraft.
+
+Wear accumulates as:
+- Maintenance stress
+- Increased breakdown chance
+- Longer repair times
+
+High Maintenance rating reduces wear per sortie.
+
+------------------------------------------------------------
+D) PERSONNEL FATIGUE
+------------------------------------------------------------
+
+Pilots and crews accumulate fatigue based on:
+- Mission duration
+- Combat intensity
+- Stress events
+
+Fatigue:
+- Reduces performance
+- Increases accident risk
+- Slows recovery if lodging is poor
+
+============================================================
+7) MISSION OUTCOMES
+============================================================
+
+Mission outcomes are determined by:
+- Pilot stats and skills
+- Aircraft capabilities
+- Base ratings (Operations, Maintenance, Training)
+- Enemy presence
+- Weather
+- Chosen risk posture
+
+Possible outcomes include:
+- Success
+- Partial success
+- Failure
+- Losses
+- Intelligence gained
+- Strategic effects
+
+============================================================
+8) STRATEGIC FEEDBACK LOOP
+============================================================
+
+Mission results influence the wider war.
+
+Positive effects over time:
+- Improved air superiority
+- Safer supply routes
+- Ground offensive support
+- Increased command confidence
+
+These translate into:
+- Increased resource allotments
+- Higher aircraft priority
+- Faster resupply
+- Better replacement personnel
+- Earlier access to advanced aircraft
+
+You are rewarded with TRUST, not currency.
+
+============================================================
+9) HISTORICAL MISSIONS
+============================================================
+
+At certain dates and locations, historical missions may appear.
+
+Characteristics:
+- Optional, but noticed by command
+- Higher risk
+- Higher strategic impact
+- Historically grounded objectives
+
+Declining a mission is allowed.
+Repeated refusal affects reputation.
+
+============================================================
+10) DESIGN GOAL
+============================================================
+
+The player should always understand:
+- Why a mission succeeded or failed
+- Why resources increased or decreased
+- Why command views the base favorably or not
+
+No invisible math.
+No unexplained penalties.
+
+============================================================
+END OF FILE
+============================================================

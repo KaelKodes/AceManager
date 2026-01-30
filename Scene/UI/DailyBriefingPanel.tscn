@@ -1,0 +1,141 @@
+[gd_scene format=3 uid="uid://bv8523qv3xsev"]
+
+[ext_resource type="Script" path="res://Script/UI/DailyBriefingPanel.cs" id="1_brief"]
+
+[node name="DailyBriefingPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_brief")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.08, 0.1, 0.98)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 60
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 60
+theme_override_constants/margin_bottom = 40
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 28
+text = "MORNING BRIEFING"
+
+[node name="DateLabel" type="Label" parent="MarginContainer/VBoxContainer/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Feb 8, 1917"
+
+[node name="HSplitContainer" type="HSplitContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LeftColumn" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 15
+
+[node name="WeatherBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HSplitContainer/LeftColumn"]
+layout_mode = 2
+
+[node name="WeatherTitle" type="Label" parent="MarginContainer/VBoxContainer/HSplitContainer/LeftColumn/WeatherBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "WEATHER"
+
+[node name="WeatherLabel" type="Label" parent="MarginContainer/VBoxContainer/HSplitContainer/LeftColumn/WeatherBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Clear skies"
+
+[node name="VisibilityLabel" type="Label" parent="MarginContainer/VBoxContainer/HSplitContainer/LeftColumn/WeatherBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Visibility: Excellent"
+
+[node name="Separator1" type="HSeparator" parent="MarginContainer/VBoxContainer/HSplitContainer/LeftColumn"]
+layout_mode = 2
+
+[node name="IntelBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HSplitContainer/LeftColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="IntelTitle" type="Label" parent="MarginContainer/VBoxContainer/HSplitContainer/LeftColumn/IntelBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "INTELLIGENCE"
+
+[node name="IntelList" type="RichTextLabel" parent="MarginContainer/VBoxContainer/HSplitContainer/LeftColumn/IntelBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+text = "• Enemy activity reports..."
+
+[node name="RightColumn" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 15
+
+[node name="NewsBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HSplitContainer/RightColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="NewsTitle" type="Label" parent="MarginContainer/VBoxContainer/HSplitContainer/RightColumn/NewsBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "ALLIED NEWS"
+
+[node name="NewsList" type="RichTextLabel" parent="MarginContainer/VBoxContainer/HSplitContainer/RightColumn/NewsBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+text = "• Reports from the front..."
+
+[node name="Separator2" type="HSeparator" parent="MarginContainer/VBoxContainer/HSplitContainer/RightColumn"]
+layout_mode = 2
+
+[node name="CommandBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HSplitContainer/RightColumn"]
+layout_mode = 2
+
+[node name="CommandTitle" type="Label" parent="MarginContainer/VBoxContainer/HSplitContainer/RightColumn/CommandBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "COMMAND ORDERS"
+
+[node name="CommandLabel" type="Label" parent="MarginContainer/VBoxContainer/HSplitContainer/RightColumn/CommandBox"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+text = "Await further instructions."
+
+[node name="DismissButton" type="Button" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "BEGIN DAY"

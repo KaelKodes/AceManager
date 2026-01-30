@@ -1,0 +1,282 @@
+WWI Pilot RPG — CrewTemplate.txt
+Version: 1.0
+Purpose: Defines all crew stats, skills, and formulas for pilots and support NPCs.
+
+============================================================
+1) CORE DESIGN PHILOSOPHY
+============================================================
+
+All crew members (pilots, planners, logistics, maintenance, etc.) share
+ONE unified stat system.
+
+- Stats represent capability.
+- Skills represent identity.
+- Roles are defined by how stats are weighted, not by unique stats.
+- No stat exists only for one role.
+- Derived values drive simulation outcomes.
+
+This system is inspired by ZenGM-style management sims:
+- Many stats, not one power number
+- Overall ratings are derived, not authoritative
+- Team fit matters as much as individual excellence
+
+============================================================
+2) CORE CREW STATS (0–100 SCALE)
+============================================================
+
+All stats are integers from 0 to 100.
+50 is average. The full scale is used.
+
+------------------------------------------------------------
+A) FLIGHT & ACTION (direct execution)
+------------------------------------------------------------
+
+CTL — Aircraft Control
+- Precision flying
+- Stall recovery
+- Formation discipline
+- Technical handling skill
+
+GUN — Gunnery
+- Accuracy
+- Fire discipline
+- Deflection shooting
+- Weapon control
+
+ENG — Energy Management
+- Speed/altitude tradeoffs
+- Boom-and-zoom competence
+- Climb/dive judgment
+
+RFX — Reaction
+- Response speed to sudden threats
+- Snap decisions
+- Avoiding surprise attacks
+
+------------------------------------------------------------
+B) AWARENESS & COOPERATION (battlefield cognition)
+------------------------------------------------------------
+
+OA — Offensive Awareness
+- Spotting enemies
+- Identifying vulnerable targets
+- Reading enemy intent
+- Avoiding tunnel vision
+
+DA — Defensive Awareness
+- Detecting threats
+- Recognizing pursuit
+- Timely evasive action
+- Warning allies
+
+TA — Team Awareness
+- Tracking ally positions
+- Formation cohesion
+- Understanding squad flow
+- Awareness beyond self
+
+WI — Wingman Instinct
+- Willingness to assist allies
+- Breaking off attacks to help
+- Escort behavior
+- Mutual protection priority
+
+------------------------------------------------------------
+C) DECISION & PSYCHOLOGY
+------------------------------------------------------------
+
+AGG — Aggression
+- Willingness to press attacks
+- Risk tolerance
+- Kill-seeking behavior
+
+DIS — Discipline
+- Doctrine adherence
+- Patience
+- Avoiding overcommitment
+
+CMP — Composure
+- Performance under fire
+- Resistance to panic
+- Stress management
+
+ADP — Adaptability
+- Responding to chaos
+- Adjusting tactics mid-mission
+- Learning in the field
+
+------------------------------------------------------------
+D) SQUAD & CAREER
+------------------------------------------------------------
+
+LDR — Leadership
+- Morale influence
+- Squad coordination
+- Authority and trust
+
+LRN — Learning Rate
+- Speed of improvement
+- Training effectiveness
+- Skill acquisition
+
+STA — Stamina
+- Fatigue resistance
+- Sortie endurance
+- Sustained performance
+
+============================================================
+3) DERIVED RATINGS (NOT STORED)
+============================================================
+
+Derived ratings are calculated at runtime and used for mission resolution.
+
+------------------------------------------------------------
+A) Combat Role Ratings (Pilots)
+------------------------------------------------------------
+
+Dogfight Rating =
+  0.25*CTL + 0.25*GUN + 0.20*OA + 0.15*RFX + 0.15*ENG
+
+Energy Fighter Rating =
+  0.30*ENG + 0.25*CTL + 0.20*OA + 0.15*DIS + 0.10*CMP
+
+Ground Attack Rating =
+  0.30*DIS + 0.25*GUN + 0.20*CTL + 0.15*CMP + 0.10*STA
+
+Recon Survival Rating =
+  0.35*DA + 0.25*OA + 0.20*ADP + 0.20*CMP
+
+------------------------------------------------------------
+B) Assist & Cooperation
+------------------------------------------------------------
+
+Assist Response Score =
+  0.35*TA + 0.35*WI + 0.15*DA + 0.10*RFX + 0.05*LDR
+
+Higher score increases probability of:
+- Breaking off to assist
+- Defending allies
+- Creating 2v1 advantages
+
+------------------------------------------------------------
+C) Pair Cohesion (evaluated per sortie)
+------------------------------------------------------------
+
+Pair Cohesion =
+  (TA₁ + TA₂)/2
++ (WI₁ + WI₂)/2
++ (DIS₁ + DIS₂)/2
+- |AGG₁ - AGG₂| * 0.5
+
+High cohesion improves survival and coordination.
+Low cohesion increases isolation risk.
+
+============================================================
+4) KEY CREW SKILLS (IDENTITY TAGS)
+============================================================
+
+Skills are NOT stats.
+They are derived flags shown to the player for fast comprehension.
+
+------------------------------------------------------------
+THE TEN LOCKED SKILLS
+------------------------------------------------------------
+
+1) Ace
+- Elite air combatant
+Derived from: High OA, GUN, ENG
+
+2) Wingman
+- Pair-focused protector
+Derived from: High TA, WI, DA
+
+3) Overwatch
+- Squad-wide defensive awareness
+Derived from: High DA, TA, CMP
+
+4) Pack Hunter
+- Excels in coordinated attacks
+Derived from: High OA, TA, DIS
+
+5) Lone Wolf
+- Effective but uncooperative
+Derived from: High OA, AGG AND low TA/WI
+
+6) Steady
+- Unshaken under fire
+Derived from: High CMP, DA
+
+7) Hotspur
+- Aggressive, reckless attacker
+Derived from: High AGG, RFX AND low DIS
+
+8) Flight Leader
+- Improves squad cohesion
+Derived from: High LDR, TA
+
+9) Instructor
+- Accelerates training & development
+Derived from: High LDR, DIS, LRN
+
+10) Survivor
+- Exceptional at disengagement & longevity
+Derived from: High DA, ADP, CMP
+
+============================================================
+5) NON-PILOT NPC APPLICATION
+============================================================
+
+Non-pilot NPCs use the SAME stat system.
+Stats are reinterpreted by role.
+
+------------------------------------------------------------
+Examples:
+------------------------------------------------------------
+
+Flight Planner:
+- OA → Strategic Awareness
+- DA → Risk Detection
+- DIS → Mission Discipline
+- ADP → Contingency Planning
+- LDR → Coordination
+
+Mission Planning Rating =
+  0.35*OA + 0.25*DIS + 0.20*ADP + 0.20*LDR
+
+Logistics Officer:
+- DIS → Process Control
+- ADP → Recovery
+- STA → Workload Capacity
+- LDR → Staff Output
+
+Maintenance Chief:
+- CTL → Technical Skill
+- DIS → Quality Control
+- ADP → Field Repairs
+- LDR → Crew Efficiency
+
+------------------------------------------------------------
+Important:
+------------------------------------------------------------
+
+A planner will never have strong combat ratings,
+just as a kicker will never lead a team in rushing yards.
+
+But they can still be elite at their role.
+
+============================================================
+6) OVERALL & POTENTIAL (OPTIONAL SYSTEM)
+============================================================
+
+OVR (Overall Rating):
+- Weighted average of role-relevant derived ratings
+- Shown to player as an estimate
+
+POT (Potential):
+- Hidden ceiling
+- Probability-based growth
+- Aging reduces chance of reaching POT
+
+============================================================
+END OF FILE
+============================================================

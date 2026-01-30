@@ -1,0 +1,243 @@
+WWI Pilot RPG — NarrativeAndEvents.txt
+Version: 1.0
+Status: NARRATIVE SYSTEM LOCKED
+Purpose: Defines how historical events, aces, and major missions exist alongside player agency.
+
+============================================================
+1) CORE NARRATIVE PHILOSOPHY
+============================================================
+
+The game follows REAL HISTORY by default.
+
+- Major historical events WILL occur.
+- Famous aces WILL exist.
+- Large-scale operations WILL be attempted.
+
+However:
+- The player can influence outcomes.
+- History can bend, but it does not break without cause.
+- Divergence requires action, not passive presence.
+
+The game answers the question:
+"What happens if YOU were really there?"
+
+============================================================
+2) EVENT CATEGORIES
+============================================================
+
+All narrative content is categorized.
+
+------------------------------------------------------------
+A) MAJOR HISTORICAL EVENTS
+------------------------------------------------------------
+
+Examples:
+- Verdun air battles
+- The Somme air offensive
+- Bloody April
+- Cambrai
+- Spring Offensives of 1918
+
+Properties:
+- Fixed dates (historical window)
+- Fixed strategic intent
+- Variable outcomes
+
+These events WILL attempt to trigger
+unless they are rendered impossible by prior changes.
+
+------------------------------------------------------------
+B) HISTORICAL ACES
+------------------------------------------------------------
+
+Examples:
+- Manfred von Richthofen
+- René Fonck
+- Edward Mannock
+- Billy Bishop
+- Georges Guynemer
+
+Properties:
+- Enter the war at historical dates
+- Assigned to historically accurate units and regions
+- Possess elite stats and appropriate skills
+
+By default:
+- They perform close to historical record
+- They die or survive historically
+
+Player intervention can:
+- Kill them earlier
+- Save them
+- Change their effectiveness
+- Alter their legacy
+
+============================================================
+3) EVENT TRIGGERS
+============================================================
+
+Events are triggered by one or more of:
+
+- Date window
+- Geographic location
+- Strategic conditions
+- Frontline status
+- Air superiority levels
+
+Events DO NOT trigger if:
+- The required region is lost
+- The opposing force has been neutralized
+- The objective has already been achieved or made irrelevant
+
+============================================================
+4) PLAYER INTERACTION WITH EVENTS
+============================================================
+
+The player may interact with events in several ways:
+
+------------------------------------------------------------
+A) DIRECT PARTICIPATION
+------------------------------------------------------------
+
+- Assigned to support a historical operation
+- Asked to escort, recon, or intercept
+- Given optional objectives tied to real history
+
+------------------------------------------------------------
+B) INDIRECT INFLUENCE
+------------------------------------------------------------
+
+- Weakening enemy air presence beforehand
+- Protecting or disrupting logistics
+- Training elite pilots who replace historical figures
+
+------------------------------------------------------------
+C) NON-INTERVENTION
+------------------------------------------------------------
+
+If the player does nothing:
+- History proceeds normally
+- Outcomes match recorded history within variance
+
+============================================================
+5) EVENT OUTCOMES
+============================================================
+
+Each event has outcome bands:
+
+- Historical Outcome (default)
+- Improved Outcome
+- Reduced Outcome
+- Failed Outcome
+- Alternate Outcome (rare)
+
+Outcomes affect:
+- National morale
+- Strategic pressure
+- Resource allocation
+- Narrative reputation
+
+============================================================
+6) HISTORICAL ACES — BEHAVIOR RULES
+============================================================
+
+Historical aces are NOT scripted heroes.
+
+They:
+- Fly missions
+- Take risks
+- Can be wounded or killed
+- Can be grounded
+- Can be outperformed
+
+However:
+- They are protected from random, meaningless death
+- They die only in combat-related or event-driven situations
+- Their deaths are ALWAYS acknowledged narratively
+
+============================================================
+7) PLAYER-DRIVEN DIVERGENCE
+============================================================
+
+Divergence occurs when the player:
+
+- Kills a historical ace
+- Prevents a key mission
+- Achieves air superiority earlier than history
+- Protects critical infrastructure unusually well
+
+When divergence occurs:
+- Future events adapt
+- Replacement figures emerge
+- Command doctrine may shift
+- History bends plausibly, not fantastically
+
+============================================================
+8) EVENT MEMORY & CONSEQUENCES
+============================================================
+
+The game remembers:
+
+- Who lived
+- Who died
+- Which missions succeeded
+- Which events were altered
+
+These memories influence:
+- Dialogue
+- Command tone
+- News reports
+- Pilot reputation
+- Late-war narrative flavor
+
+============================================================
+9) PRESENTATION TO THE PLAYER
+============================================================
+
+Events are presented through:
+- Briefings
+- News bulletins
+- Officer conversations
+- Letters
+- After-action reports
+
+The game never says:
+"You changed history."
+
+It shows:
+"History reacted."
+
+============================================================
+10) FAILURE IS PART OF THE STORY
+============================================================
+
+Historical disasters can still occur.
+
+The player is not expected to:
+- Win every battle
+- Save every ace
+- Prevent every loss
+
+Failure generates:
+- Pressure
+- Narrative weight
+- Strategic consequences
+- Emotional investment
+
+============================================================
+11) DESIGN GOAL
+============================================================
+
+The player should feel:
+
+- Small, but important
+- In history, not above it
+- Responsible, but not omnipotent
+- Remembered, even if forgotten by textbooks
+
+History is the stage.
+The player is a force upon it.
+
+============================================================
+END OF FILE
+============================================================

@@ -1,0 +1,21 @@
+# Godot-specific ignores
+.godot/
+/android/
+*.import
+export_presets.cfg
+
+# Mono/C# specific ignores
+bin/
+obj/
+.vs/
+.vscode/
+*.csproj.user
+*.sln.DotSettings.user
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# System-specific ignores
+.DS_Store
+Thumbs.db
