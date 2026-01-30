@@ -43,13 +43,14 @@ text = "SQUADRON ROSTER"
 horizontal_alignment = 1
 
 [node name="TabContainer" type="TabContainer" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
 [node name="Pilots" type="TabBar" parent="MarginContainer/VBoxContainer/TabContainer"]
 layout_mode = 2
 
-[node name="PilotList" type="ItemList" parent="MarginContainer/VBoxContainer/TabContainer/Pilots"]
+[node name="PilotList" type="Tree" parent="MarginContainer/VBoxContainer/TabContainer/Pilots"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -57,12 +58,16 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+columns = 12
+column_titles_visible = true
+hide_root = true
+select_mode = 1
 
 [node name="Aircraft" type="TabBar" parent="MarginContainer/VBoxContainer/TabContainer"]
 visible = false
 layout_mode = 2
 
-[node name="AircraftList" type="ItemList" parent="MarginContainer/VBoxContainer/TabContainer/Aircraft"]
+[node name="AircraftList" type="Tree" parent="MarginContainer/VBoxContainer/TabContainer/Aircraft"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -70,6 +75,18 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+columns = 9
+column_titles_visible = true
+hide_root = true
+select_mode = 1
+
+[node name="Legend" type="Label" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 14
+text = "GUN: Gunnery | CTL: Control | OA: Offense | DIS: Discipline | CMP: Composure | STA: Stamina | MSS: Missions | VIC: Victories | COND: Condition"
+horizontal_alignment = 1
 
 [node name="ButtonRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2

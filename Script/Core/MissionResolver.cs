@@ -377,8 +377,19 @@ namespace AceManager.Core
 
                 // 1. Basic Participation
                 pilot.MissionsFlown++;
-                pilot.AddImprovement("LRN", 0.2f); // Slow learning gain
-                pilot.AddImprovement("STA", 0.5f);
+                pilot.AddImprovement("LRN", 0.1f); // Slightly slower than before
+                pilot.AddImprovement("STA", 0.3f);
+
+                // Merit and Fatigue (v2.0)
+                int meritGain = 0;
+                float fatigueGain = 10f + (mission.TargetDistance * 1.5f);
+
+                // Risk posture affects fatigue
+                if (mission.Risk == RiskPosture.Aggressive) fatigueGain *= 1.25f;
+                else if (mission.Risk == RiskPosture.Conservative) fatigueGain *= 0.75f;
+
+                pilot.Fatigue = Math.Min(100, pilot.Fatigue + fatigueGain);
+                LogEntry(mission, $"{pilot.Name} fatigue increased by {fatigueGain:F1}.");
 
                 // 2. Mission Type Bonuses
                 switch (mission.Type)
@@ -415,12 +426,29 @@ namespace AceManager.Core
                 if (mission.FollowedOrders && mission.OrderBonus > 0)
                 {
                     pilot.AddImprovement("DIS", 0.5f); // Discipline for following orders
+                    meritGain += 5;
 
                     // Captain merit for good command decision
                     if (GameManager.Instance.PlayerCaptain != null)
                     {
                         GameManager.Instance.PlayerCaptain.AddMerit(2);
                     }
+                }
+
+                // 5. Outcome Merit (v2.0)
+                meritGain += mission.ResultBand switch
+                {
+                    MissionResultBand.DecisiveSuccess => 15,
+                    MissionResultBand.Success => 10,
+                    MissionResultBand.MarginalSuccess => 5,
+                    MissionResultBand.Stalemate => 2,
+                    _ => 0
+                };
+
+                pilot.Merit += meritGain;
+                if (meritGain > 0)
+                {
+                    LogEntry(mission, $"{pilot.Name} earned {meritGain} Merit for mission performance.");
                 }
 
                 // Apply the gains

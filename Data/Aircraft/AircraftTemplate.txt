@@ -6,10 +6,10 @@ WWI Pilot RPG — aircraft.txt (CSV Template + Field Guide) — v1
 ============================================================
 
 # Column headers (one line):
-aircraft_id,name,nation,manufacturer,year_introduced,role_primary,variant,speed_range,climb_range,turn_range,stability_range,dive_safety_range,ceiling_range,range_range,fighter_role,bomber_role,recon_role,firepower_range,accuracy_range,ammo_range,weapon_type,firing_arc,airframe_strength_range,engine_durability_range,pilot_protection_range,fuel_vulnerability_range,reliability_range,maintenance_cost_range,repair_time_range,spare_parts_availability_range,training_difficulty_range,skill_ceiling_range,ace_synergy_range,hangar_size,runway_requirement_range,fuel_consumption_range,supply_strain_range,base_reputation_required,command_priority_tier,production_scarcity_range,doctrine_tags
+aircraft_id,name,nation,manufacturer,year_introduced,role_primary,variant,speed_range,climb_range,turn_range,stability_range,dive_safety_range,ceiling_range,range_range,fighter_role,bomber_role,recon_role,firepower_range,accuracy_range,ammo_range,weapon_type,firing_arc,airframe_strength_range,engine_durability_range,pilot_protection_range,fuel_vulnerability_range,reliability_range,maintenance_cost_range,repair_time_range,spare_parts_availability_range,training_difficulty_range,skill_ceiling_range,ace_synergy_range,hangar_size,runway_requirement_range,fuel_consumption_range,supply_strain_range,base_reputation_required,command_priority_tier,production_scarcity_range,crew_seats,firepower_rear,doctrine_tags
 
 # Example row (delete later if you want):
-F001,Fokker E.III,Germany,Fokker,1915,Fighter,Base,6,5,4,6,3,5,4,8,1,2,5,4,6,MG,Forward,4,4,2,6,6,3,3,7,6,5,4,Small,3,4,3,10,1,6,"early_war,interceptor"
+F001,Fokker E.III,Germany,Fokker,1915,Fighter,Base,6,5,4,6,3,5,4,8,1,2,5,4,6,MG,Forward,4,4,2,6,6,3,3,7,6,5,4,Small,3,4,3,10,1,6,1,0,"early_war,interceptor"
 
 ============================================================
 2) FIELD GUIDE — WHAT EACH STAT MEANS (and how to use it)
@@ -145,6 +145,14 @@ firing_arc (enum)
 - Flexible: observer/gunner arcs.
 - Rear: defensive-only (rare as primary).
 - Mixed: forward + rear or multiple positions.
+
+crew_seats
+- Number of operational stations (1 = Single-Seater, 2 = Two-Seater).
+- Two-seaters allow for a rear gunner/observer role.
+
+firepower_rear
+- Damage potential of the defensive station (only if seats > 1).
+- Used in defensive combat resolution.
 
 ------------------------------------------------------------
 E) Survivability (how it dies; 1–10 ranges)

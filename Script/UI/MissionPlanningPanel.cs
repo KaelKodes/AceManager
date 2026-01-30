@@ -26,6 +26,16 @@ namespace AceManager.UI
 		private FlightAssignment _flightLeader = null;
 		private bool _isReady = false;
 
+		private enum SelectionMode
+		{
+			PickAircraft,
+			PickPilot,
+			PickObserver
+		}
+
+		private SelectionMode _currentMode = SelectionMode.PickAircraft;
+		private FlightAssignment _tempAssignment = null;
+
 		[Signal] public delegate void PanelClosedEventHandler();
 
 		public override void _Ready()
@@ -79,12 +89,13 @@ namespace AceManager.UI
 			_pendingAssignments.Clear();
 			_flightLeader = null;
 
+			// Reset selection flow
+			_currentMode = SelectionMode.PickAircraft;
+			_tempAssignment = null;
+
 			GD.Print($"MissionPlanningPanel: Found {_availableAircraft.Count} aircraft, {_availablePilots.Count} pilots");
 
-			PopulatePilotList();
-			PopulateAircraftList();
-			UpdateAssignmentsDisplay();
-			UpdateCostPreview();
+			RefreshLists();
 		}
 
 		public override void _Notification(int what)
@@ -104,6 +115,10 @@ namespace AceManager.UI
 			// Get pilots already assigned
 			var assignedPilots = _pendingAssignments.Select(a => a.Pilot).ToHashSet();
 			var assignedGunners = _pendingAssignments.Where(a => a.Gunner != null).Select(a => a.Gunner).ToHashSet();
+
+			// Also exclude pilot of current temp assignment
+			if (_tempAssignment?.Pilot != null) assignedPilots.Add(_tempAssignment.Pilot);
+			if (_tempAssignment?.Gunner != null) assignedGunners.Add(_tempAssignment.Gunner);
 
 			foreach (var pilot in _availablePilots)
 			{
@@ -147,12 +162,27 @@ namespace AceManager.UI
 			_pilotList.ItemSelected += OnPilotSelected;
 			_aircraftList.ItemSelected += OnAircraftSelected;
 
-			// Double-click to view details
-			_pilotList.ItemActivated += OnPilotDoubleClicked;
-			_aircraftList.ItemActivated += OnAircraftDoubleClicked;
+			// Use the same lists but filter/disable based on mode
+			_pilotList.ItemActivated += (idx) => OnPilotSelected(idx);
+			_aircraftList.ItemActivated += (idx) => OnAircraftSelected(idx);
 
 			_cancelButton.Pressed += OnCancelPressed;
 			_launchButton.Pressed += OnLaunchPressed;
+
+			// Optional skip for observer seat
+			_flightLeaderLabel.GuiInput += (ev) =>
+			{
+				if (ev is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+				{
+					if (_currentMode == SelectionMode.PickObserver)
+					{
+						GD.Print("Skipping observer seat.");
+						FinalizeAssignment();
+						RefreshLists();
+					}
+				}
+			};
+			_flightLeaderLabel.MouseDefaultCursorShape = CursorShape.PointingHand;
 		}
 
 		private void OnPilotDoubleClicked(long index)
@@ -201,75 +231,109 @@ namespace AceManager.UI
 		}
 
 
-		private int _selectedPilotIndex = -1;
-		private int _selectedAircraftIndex = -1;
-
 		private void OnPilotSelected(long index)
 		{
-			_selectedPilotIndex = (int)index;
-			TryCreateAssignment();
+			if (_currentMode == SelectionMode.PickAircraft) return;
+
+			string pilotName = _pilotList.GetItemMetadata((int)index).AsString();
+			var pilot = _availablePilots.FirstOrDefault(p => p.Name == pilotName);
+			if (pilot == null) return;
+
+			if (_currentMode == SelectionMode.PickPilot)
+			{
+				_tempAssignment.Pilot = pilot;
+				if (_tempAssignment.IsTwoSeater())
+				{
+					_currentMode = SelectionMode.PickObserver;
+					GD.Print($"Pilot assigned: {pilot.Name}. Now picking Observer.");
+				}
+				else
+				{
+					FinalizeAssignment();
+				}
+			}
+			else if (_currentMode == SelectionMode.PickObserver)
+			{
+				_tempAssignment.Observer = pilot; // Or Gunner, depending on logic
+												  // For now, let's just use Gunner as the default second seat
+				_tempAssignment.Gunner = pilot;
+				FinalizeAssignment();
+			}
+
+			RefreshLists();
 		}
 
 		private void OnAircraftSelected(long index)
 		{
-			_selectedAircraftIndex = (int)index;
-			TryCreateAssignment();
+			if (_currentMode != SelectionMode.PickAircraft) return;
+
+			string tailNumber = _aircraftList.GetItemMetadata((int)index).AsString();
+			var aircraft = _availableAircraft.FirstOrDefault(a => a.TailNumber == tailNumber);
+			if (aircraft == null) return;
+
+			_tempAssignment = new FlightAssignment(aircraft, null);
+			_currentMode = SelectionMode.PickPilot;
+			GD.Print($"Aircraft selected: {aircraft.GetDisplayName()}. Now picking Pilot.");
+
+			RefreshLists();
 		}
 
-		private void TryCreateAssignment()
+		private void FinalizeAssignment()
 		{
-			if (_selectedPilotIndex < 0 || _selectedAircraftIndex < 0) return;
+			if (_tempAssignment == null || !_tempAssignment.IsValid()) return;
 
-			// Get pilot by metadata (name)
-			string pilotName = _pilotList.GetItemMetadata(_selectedPilotIndex).AsString();
-			var pilot = _availablePilots.FirstOrDefault(p => p.Name == pilotName);
+			_pendingAssignments.Add(_tempAssignment);
+			if (_flightLeader == null) _flightLeader = _tempAssignment;
 
-			// Get aircraft by metadata (tail number)
-			string tailNumber = _aircraftList.GetItemMetadata(_selectedAircraftIndex).AsString();
-			var aircraft = _availableAircraft.FirstOrDefault(a => a.TailNumber == tailNumber);
+			GD.Print($"Assignment finalized: {_tempAssignment.GetDisplayName()}");
 
-			if (pilot == null || aircraft == null)
-			{
-				GD.PrintErr("Could not find pilot or aircraft!");
-				return;
-			}
+			_tempAssignment = null;
+			_currentMode = SelectionMode.PickAircraft;
+		}
 
-			var assignment = new FlightAssignment(aircraft, pilot);
-
-			// For two-seaters, auto-assign a gunner
-			if (aircraft.GetCrewSeats() >= 2)
-			{
-				var usedCrew = _pendingAssignments.SelectMany(a => new[] { a.Pilot, a.Gunner, a.Observer })
-					.Where(c => c != null).ToHashSet();
-				usedCrew.Add(pilot);
-
-				var gunner = _availablePilots.FirstOrDefault(p => !usedCrew.Contains(p));
-				if (gunner != null)
-				{
-					assignment.Gunner = gunner;
-					GD.Print($"Auto-assigned {gunner.Name} as gunner.");
-				}
-			}
-
-			_pendingAssignments.Add(assignment);
-
-			// First assignment is default flight leader
-			if (_flightLeader == null)
-			{
-				_flightLeader = assignment;
-			}
-
-			GD.Print($"Assignment created: {assignment.GetDisplayName()}");
-
-			// Reset selections
-			_selectedPilotIndex = -1;
-			_selectedAircraftIndex = -1;
-
-			// Refresh lists to remove assigned items
+		private void RefreshLists()
+		{
+			_pilotList.DeselectAll();
+			_aircraftList.DeselectAll();
 			PopulatePilotList();
 			PopulateAircraftList();
 			UpdateAssignmentsDisplay();
 			UpdateCostPreview();
+			UpdateModeInstructions();
+		}
+
+		private void UpdateModeInstructions()
+		{
+			if (_currentMode == SelectionMode.PickAircraft)
+			{
+				SetListEnabled(_pilotList, false);
+				SetListEnabled(_aircraftList, true);
+				_flightLeaderLabel.Text = _pendingAssignments.Count == 0 ? "Select an Aircraft to start your flight" : "Select another Aircraft or Launch";
+			}
+			else if (_currentMode == SelectionMode.PickPilot)
+			{
+				SetListEnabled(_pilotList, true);
+				SetListEnabled(_aircraftList, false);
+				_flightLeaderLabel.Text = $"Assign a Pilot for the {(_tempAssignment?.Aircraft?.Definition?.Name ?? "Aircraft")}";
+			}
+			else if (_currentMode == SelectionMode.PickObserver)
+			{
+				SetListEnabled(_pilotList, true);
+				SetListEnabled(_aircraftList, false);
+				_flightLeaderLabel.Text = $"Assign Observer for the {(_tempAssignment?.Aircraft?.Definition?.Name ?? "Aircraft")} (Optional - Click here to skip)";
+				_flightLeaderLabel.SelfModulate = new Color(0.5f, 1f, 0.5f);
+			}
+			else
+			{
+				_flightLeaderLabel.SelfModulate = Colors.White;
+			}
+		}
+
+		private void SetListEnabled(ItemList list, bool enabled)
+		{
+			list.FocusMode = enabled ? FocusModeEnum.All : FocusModeEnum.None;
+			list.MouseFilter = enabled ? MouseFilterEnum.Stop : MouseFilterEnum.Ignore;
+			list.Modulate = enabled ? Colors.White : new Color(1, 1, 1, 0.5f);
 		}
 
 		private void UpdateAssignmentsDisplay()
@@ -386,6 +450,15 @@ namespace AceManager.UI
 
 		private void OnCancelPressed()
 		{
+			if (_tempAssignment != null)
+			{
+				GD.Print("Resetting current selection.");
+				_tempAssignment = null;
+				_currentMode = SelectionMode.PickAircraft;
+				RefreshLists();
+				return;
+			}
+
 			_pendingAssignments.Clear();
 			_flightLeader = null;
 			EmitSignal(SignalName.PanelClosed);

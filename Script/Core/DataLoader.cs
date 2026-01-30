@@ -46,7 +46,8 @@ namespace AceManager.Core
                 if (values.Length < headers.Length) continue;
 
                 var data = new AircraftData();
-                try {
+                try
+                {
                     data.AircraftId = values[0];
                     data.Name = values[1];
                     data.Nation = values[2];
@@ -54,7 +55,7 @@ namespace AceManager.Core
                     data.YearIntroduced = int.Parse(values[4]);
                     data.RolePrimary = values[5];
                     data.Variant = values[6];
-                    
+
                     data.SpeedRange = int.Parse(values[7]);
                     data.ClimbRange = int.Parse(values[8]);
                     data.TurnRange = int.Parse(values[9]);
@@ -95,10 +96,18 @@ namespace AceManager.Core
                     data.BaseReputationRequired = int.Parse(values[37]);
                     data.CommandPriorityTier = int.Parse(values[38]);
                     data.ProductionScarcityRange = int.Parse(values[39]);
-                    
+
                     if (values.Length > 40)
                     {
-                        data.DoctrineTags = values[40].Trim('"').Split(',').Select(t => t.Trim()).ToArray();
+                        data.CrewSeats = int.Parse(values[40]);
+                    }
+                    if (values.Length > 41)
+                    {
+                        data.FirepowerRear = int.Parse(values[41]);
+                    }
+                    if (values.Length > 42)
+                    {
+                        data.DoctrineTags = values[42].Trim('"').Split(',').Select(t => t.Trim()).ToArray();
                     }
 
                     list.Add(data);
@@ -143,7 +152,7 @@ namespace AceManager.Core
         {
             var bases = new List<AirbaseData>();
             string path = AirbaseDataPath + "AirbaseDatabase.txt";
-            
+
             using var file = FileAccess.Open(path, FileAccess.ModeFlags.Read);
             if (file == null) return bases;
 
@@ -164,7 +173,7 @@ namespace AceManager.Core
                 {
                     if (line.StartsWith("Nation:")) currentBase.Nation = line.Replace("Nation:", "").Trim();
                     else if (line.StartsWith("Location:")) currentBase.Location = line.Replace("Location:", "").Trim();
-                    else if (line.StartsWith("Coordinates:")) 
+                    else if (line.StartsWith("Coordinates:"))
                     {
                         var coords = line.Replace("Coordinates:", "").Trim().Split(',');
                         if (coords.Length == 2)

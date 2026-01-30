@@ -140,7 +140,7 @@ namespace AceManager.UI
                 return;
             }
 
-            if (_commandMapPanel == null)
+            if (!GodotObject.IsInstanceValid(_commandMapPanel))
             {
                 _commandMapPanel = _commandMapScene.Instantiate<Control>();
                 AddChild(_commandMapPanel);
@@ -152,7 +152,7 @@ namespace AceManager.UI
 
         private void OnViewRosterPressed()
         {
-            if (_rosterPanel == null)
+            if (!GodotObject.IsInstanceValid(_rosterPanel))
             {
                 _rosterPanel = _rosterPanelScene.Instantiate<Control>();
                 AddChild(_rosterPanel);
@@ -177,7 +177,7 @@ namespace AceManager.UI
             var briefing = GameManager.Instance.TodaysBriefing;
             if (briefing == null) return;
 
-            if (_briefingPanel == null)
+            if (!GodotObject.IsInstanceValid(_briefingPanel))
             {
                 _briefingPanel = _briefingPanelScene.Instantiate<Control>();
                 AddChild(_briefingPanel);
@@ -206,7 +206,7 @@ namespace AceManager.UI
                 return;
             }
 
-            if (_missionPlanningPanel == null)
+            if (!GodotObject.IsInstanceValid(_missionPlanningPanel))
             {
                 _missionPlanningPanel = _planningPanelScene.Instantiate<Control>();
                 AddChild(_missionPlanningPanel);
@@ -233,7 +233,7 @@ namespace AceManager.UI
             var mission = GameManager.Instance.LastCompletedMission;
             if (mission == null) return;
 
-            if (_missionResultPanel == null)
+            if (!GodotObject.IsInstanceValid(_missionResultPanel))
             {
                 _missionResultPanel = _resultPanelScene.Instantiate<Control>();
                 AddChild(_missionResultPanel);

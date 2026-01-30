@@ -1,0 +1,380 @@
+WWI Pilot RPG — PilotAdvancementAndRoles.txt
+Version: 1.0
+Status: CANONICAL (Single Source of Truth)
+Purpose: Defines pilot stats, derived ratings, roles, skills, growth, fatigue, and rank advancement.
+Scope: Applies to all pilots and (where noted) can extend to other crew types.
+
+============================================================
+1) PILOT STAT MODEL (0–100)
+============================================================
+
+All pilot stats are integers from 0 to 100.
+50 is average. The full scale is used.
+
+------------------------------------------------------------
+A) FLIGHT & ACTION (execution)
+------------------------------------------------------------
+
+CTL — Control
+- Stick-and-rudder skill; maneuvering and precision flight.
+- Impacts: dogfight effectiveness, takeoff/landing safety, stable flying.
+
+GUN — Gunnery
+- Accuracy with machine guns and bombs; fire discipline.
+- Impacts: kill chance, bombing accuracy, gunner effectiveness.
+
+ENG — Energy Management
+- Using altitude/speed advantages; climb/dive judgment.
+- Impacts: energy fighting performance, disengage opportunities.
+
+RFX — Reaction
+- Response speed to sudden threats; snap decisions.
+- Impacts: survival in close fights, gunner snap-shots.
+
+------------------------------------------------------------
+B) AWARENESS & COOPERATION (cognition)
+------------------------------------------------------------
+
+OA — Offensive Awareness
+- Ability to spot enemies and identify openings.
+- Impacts: engagement selection, intercept success, first-shot advantage.
+
+DA — Defensive Awareness
+- “Checking your six”; detecting pursuit and threats.
+- Impacts: survival, recon/escort safety, ambush avoidance.
+
+TA — Team Awareness
+- Tracking ally positions and formation cohesion.
+- Impacts: escort performance, coordinated attacks, flight stability.
+
+WI — Wingman Instinct
+- Protective behavior; willingness to assist and cover allies.
+- Impacts: assist frequency, defensive saves, formation support.
+
+------------------------------------------------------------
+C) DECISION & PSYCHOLOGY
+------------------------------------------------------------
+
+AGG — Aggression
+- Willingness to push the attack (raises impact, increases risk).
+- Impacts: engagement frequency, kill opportunities, overcommit chance.
+
+DIS — Discipline
+- Following orders; maintaining formation and restraint.
+- Impacts: mission compliance, bomber/recon reliability, reduced mistakes.
+
+CMP — Composure
+- Performance under fire; resistance to panic and stress errors.
+- Impacts: steady performance, reduced panic decay, survival.
+
+ADP — Adaptability
+- Handling failures, weather shifts, and chaos.
+- Impacts: recon survival, recovery from bad situations, improvisation.
+
+------------------------------------------------------------
+D) CAREER & ENDURANCE
+------------------------------------------------------------
+
+LDR — Leadership
+- Command trust and ability to direct others (no aura/buff by default).
+- Impacts: eligibility for lead assignments; Nation AI trust weighting.
+
+LRN — Learning Rate
+- Multiplier for post-mission stat gains.
+- Impacts: growth speed across all stats.
+
+STA — Stamina
+- Fatigue resistance; reduces degradation on long sorties.
+- Impacts: endurance, fatigue accumulation, sustained ops.
+
+============================================================
+2) DERIVED RATINGS (USED BY SIM; NOT STORED)
+============================================================
+
+Derived ratings are calculated at runtime.
+
+Dogfight Rating:
+- Weighted combination of CTL, GUN, OA, RFX, ENG
+- Used for: Patrol and Interception (fighter missions)
+
+Energy Fighter Rating:
+- Weighted combination of ENG, CTL, OA, DIS, CMP
+- Used for: high-altitude/vertical combat situations
+
+Ground Attack Rating:
+- Weighted combination of DIS, GUN, CTL, CMP, STA
+- Used for: Bombing and Strafing (anti-personnel)
+
+Recon Survival Rating:
+- Weighted combination of DA, OA, ADP, CMP
+- Used for: Reconnaissance and long-range survival
+
+OVR (Roster Display Only):
+- (CTL + GUN + OA + DA + CMP) / 5
+- A single, readable “at a glance” rating for UI.
+- Not a guarantee of performance.
+
+============================================================
+3) SKILLS (PASSIVE TALENTS; UNLOCKED BY THRESHOLDS)
+============================================================
+
+Skills are identity tags. They do not replace stats.
+Skills unlock when stat thresholds are met (example thresholds below).
+Skills are shown to the player as badges.
+
+(Initial three in current sim sheet)
+- Ace:
+  Requirement: OA, GUN, ENG > 70
+  Effect: +3 effectiveness (flat) to air combat contribution
+
+- Wingman:
+  Requirement: TA, WI, DA > 70
+  Effect: +1.5 effectiveness (flat) to flight contribution
+
+- Steady:
+  Requirement: CMP, DA > 70
+  Effect: +1.0 effectiveness (flat) to flight contribution
+
+Note:
+- Additional skills may exist in the design bible (Overwatch, Pack Hunter, etc.)
+- Implementations can extend this list, but skill philosophy stays consistent:
+  Skills tilt probability; they never guarantee outcomes.
+
+============================================================
+4) PILOT GROWTH & ADVANCEMENT
+============================================================
+
+Pilots improve primarily through:
+- Flying missions
+- Surviving combat
+- Training events (when scheduled)
+- Victories (confirmed kills)
+
+------------------------------------------------------------
+A) POST-MISSION STAT GAINS
+------------------------------------------------------------
+
+After each mission:
+- Relevant stats gain +0.1 to +1.0 (range depends on intensity and outcome)
+- LRN multiplies these gains:
+  Example: LRN 100 grows ~2× faster than LRN 50
+
+Mission type influences what grows most:
+- Patrol/Interception: CTL, GUN, OA, RFX, ENG
+- Escort: TA, WI, DA, DIS, CMP
+- Recon: DA, OA, ADP, CMP
+- Bombing/Strafing: DIS, GUN, CTL, CMP, STA
+
+------------------------------------------------------------
+B) VICTORY BONUSES
+------------------------------------------------------------
+
+Each confirmed kill grants extra growth to:
+- GUN
+- OA
+- CMP
+
+(Exact bonus values tuned in balance pass.)
+
+------------------------------------------------------------
+C) DIMINISHING RETURNS (RECOMMENDED)
+------------------------------------------------------------
+
+To prevent runaway late-game stats:
+- Stats above 80 grow slower
+- Stats above 90 grow much slower
+
+(Exact scaling is tunable; principle is locked.)
+
+============================================================
+5) FATIGUE, INJURY, AND PERFORMANCE DEGRADATION
+============================================================
+
+Pilots accumulate fatigue based on:
+- Mission duration
+- Combat intensity
+- Base Lodging rating
+- STA (resistance)
+
+Effects of high fatigue:
+- Reduced effective performance (soft penalties)
+- Increased accident risk
+- Increased panic/stress incidents
+- Slower recovery
+
+Injury outcomes:
+- Wounded: grounded for recovery (Medical rating affects time)
+- KIA/MIA: removed from roster (narrative weight applied)
+
+============================================================
+6) RANK (PROMOTION) — DESCRIPTIVE, NOT BUFFING
+============================================================
+
+Rank is granted for accomplishments and trust.
+Rank provides NO direct stat bonuses and NO auras.
+
+Rank affects:
+- Eligibility for certain responsibilities
+- Nation AI assignment preferences (tie-breaks, trust)
+- Narrative weight and consequences
+
+------------------------------------------------------------
+A) HIDDEN METRIC: MERIT (COMMAND TRUST)
+------------------------------------------------------------
+
+MERIT is a hidden value representing command trust.
+
+MERIT increases from:
+- Missions completed (difficulty-weighted)
+- Mission success
+- Survival under stress
+- Following orders (DIS influence)
+- Strategic importance of missions
+
+MERIT increases slowly and is not player-visible.
+
+------------------------------------------------------------
+B) PROMOTION CHECKS
+------------------------------------------------------------
+
+Promotion checks occur periodically (weekly or monthly).
+Command considers:
+- MERIT threshold
+- Missions flown minimum
+- Current readiness (not wounded/grounded)
+- Nation priorities and manpower needs
+
+Rank ladder (example, nation-specific names can vary):
+- Flight Sergeant (or equivalent)
+- 2nd Lieutenant
+- 1st Lieutenant
+- Captain
+- Major (rare)
+
+Notes:
+- Kills help, but do not guarantee promotion.
+- Recon and escort veterans can rise without high kill counts.
+- Promotion is a responsibility and may increase mission pressure.
+
+============================================================
+7) ROLE SYSTEM — DETECTED FROM STATS (NOT CHOSEN)
+============================================================
+
+Roles are inferred labels that describe what a pilot excels at.
+Roles do not modify stats. They inform:
+- UI presentation (baseball card style)
+- Mission assignment suggestions
+- Two-seater crew selection (critical)
+
+Each pilot may have:
+- Primary Role
+- Secondary Role
+
+Roles are re-evaluated:
+- On creation
+- Every X missions (recommended: every 5)
+- After major injury
+- After reassignment to different aircraft class/seat
+
+------------------------------------------------------------
+A) ROLE SCORING CONCEPT
+------------------------------------------------------------
+
+Each role has an internal RoleScore computed from:
+- A key derived rating (where applicable)
+- Supporting stats
+- Optional usage bias (what missions/seat they actually flew)
+
+RoleScore is internal and not shown to player.
+
+Primary Role:
+- Highest RoleScore above threshold
+
+Secondary Role:
+- Second-highest RoleScore if close to primary (recommended: within ~85–90%)
+
+------------------------------------------------------------
+B) ROLE DEFINITIONS (DETECTION RULES)
+------------------------------------------------------------
+
+1) Fighter
+- Primary indicator: Dogfight Rating ≥ 70
+- Supporting: OA ≥ 65, CTL ≥ 65, RFX ≥ 60, GUN ≥ 60
+- Disqualifier: CMP < 45
+
+2) Bomber Pilot
+- Primary indicator: Ground Attack Rating ≥ 65
+- Supporting: DIS ≥ 65, CMP ≥ 60, STA ≥ 60, CTL ≥ 55
+- Disqualifier: AGG ≥ 75
+
+3) Recon Pilot
+- Primary indicator: Recon Survival Rating ≥ 65
+- Supporting: DA ≥ 70, ADP ≥ 60, CMP ≥ 60
+- Disqualifier: AGG ≥ 70
+
+4) Gunner (Two-Seater Specialist)
+- Primary indicator: GUN ≥ 70 and RFX ≥ 65
+- Supporting: DA ≥ 60, CMP ≥ 55, STA ≥ 55
+- Notes:
+  - Intended for secondary-seat assignment
+  - Usage bias can favor pilots with gunner seat history
+
+5) Mentor
+- Primary indicator: TA ≥ 70, DIS ≥ 65, CMP ≥ 65
+- Supporting: LRN ≥ 60, WI ≥ 60
+- Usage bias: flying with rookies; low panic incidents in mixed flights
+
+6) Anti-Personnel
+- Primary indicator: GUN ≥ 65 and AGG ≥ 70
+- Supporting: RFX ≥ 60, CTL ≥ 55
+- Disqualifier: DIS < 45
+
+7) Rookie
+- Default when:
+  - Missions flown < 10, OR
+  - No RoleScore meets threshold
+- Notes:
+  - High LRN accelerates role emergence
+  - Rookie is expected to disappear over time
+
+============================================================
+8) TWO-SEATER CREW ASSIGNMENT (PILOT + SECONDARY)
+============================================================
+
+Two-seater aircraft require:
+- Pilot seat
+- Secondary seat (gunner/observer)
+
+Seat contribution is evaluated separately.
+
+General guidance:
+- Pilot seat favors: CTL, DA, ADP, CMP (plus mission-specific stats)
+- Secondary seat favors: GUN, RFX, DA, CMP, STA
+
+Role fit becomes strategically important:
+- Recon Pilot + Gunner pairing is ideal for recon aircraft
+- Bomber Pilot + Gunner pairing is ideal for bombing two-seaters
+
+Poor pairing is allowed but increases:
+- losses
+- aborts
+- mission volatility
+
+============================================================
+9) UI PRESENTATION (BASEBALL CARD GOAL)
+============================================================
+
+Pilot cards should show:
+- Name, nation, unit
+- OVR and POT (if used)
+- Fatigue/Status
+- Primary and Secondary Role
+- Key skills (badges)
+- Career stats (sorties, victories, wounds, etc.)
+
+The UI should not show raw RoleScore or MERIT.
+It should explain outcomes through plain-language callouts.
+
+============================================================
+END OF FILE
+============================================================
