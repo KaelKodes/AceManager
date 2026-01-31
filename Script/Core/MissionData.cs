@@ -47,6 +47,11 @@ namespace AceManager.Core
         [Export] public int TargetDistance { get; set; } = 1; // 1-10 scale
         [Export] public RiskPosture Risk { get; set; } = RiskPosture.Standard;
         [Export] public MissionStatus Status { get; set; } = MissionStatus.Planned;
+        [Export] public Vector2 TargetLocation { get; set; }
+        [Export] public string TargetName { get; set; }
+
+        // Flight segments / path
+        public List<Vector2> Waypoints { get; set; } = new List<Vector2>();
 
         // Flight assignments (replaces old AssignedAircraft/AssignedPilots)
         public List<FlightAssignment> Assignments { get; set; } = new List<FlightAssignment>();

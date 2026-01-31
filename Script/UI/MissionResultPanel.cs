@@ -39,11 +39,10 @@ namespace AceManager.UI
             _resultBand.Text = mission.ResultBand.ToString().ToUpper();
             _resultBand.Modulate = GetResultColor(mission.ResultBand);
 
-            // Mission log
             _missionLog.Text = "";
             foreach (var entry in mission.MissionLog)
             {
-                _missionLog.Text += entry + "\n";
+                _missionLog.Text += $"[center]{entry}[/center]\n";
             }
 
             // Order compliance
@@ -51,15 +50,25 @@ namespace AceManager.UI
             {
                 _missionLog.BbcodeEnabled = true;
                 string colorHex = mission.OrderBonus >= 0 ? "#55ff55" : "#ffff55";
-                _missionLog.Text += $"\n[color={colorHex}]◆ {mission.OrderComplianceMessage}[/color]\n";
+                _missionLog.Text += $"\n[center][color={colorHex}]◆ {mission.OrderComplianceMessage}[/color][/center]\n";
             }
 
             // Summary stats
+            _killsLabel.HorizontalAlignment = HorizontalAlignment.Center;
             _killsLabel.Text = $"Kills: {mission.EnemyKills}";
+
             int totalLosses = mission.AircraftLost + mission.CrewWounded + mission.CrewKilled;
+            _lossesLabel.HorizontalAlignment = HorizontalAlignment.Center;
             _lossesLabel.Text = $"Losses: {totalLosses}";
+
+            _fuelLabel.HorizontalAlignment = HorizontalAlignment.Center;
             _fuelLabel.Text = $"Fuel: -{mission.FuelConsumed}";
+
+            _ammoLabel.HorizontalAlignment = HorizontalAlignment.Center;
             _ammoLabel.Text = $"Ammo: -{mission.AmmoConsumed}";
+
+            _resultBand.HorizontalAlignment = HorizontalAlignment.Center;
+            _missionLog.BbcodeEnabled = true;
 
             Show();
         }

@@ -26,16 +26,24 @@ namespace AceManager.Core
             }
 
             // PHASE 2: Contact & Engagement
-            int contactIntensity = ResolveContact(mission, baseData);
+            string specialEvent = "";
+            int contactIntensity = ResolveContact(mission, baseData, out specialEvent);
+            bool hadContact = contactIntensity > 0 || !string.IsNullOrEmpty(specialEvent);
 
             // PHASE 3: Outcome Determination
-            mission.ResultBand = CalculateOutcome(mission, baseData, contactIntensity);
+            mission.ResultBand = CalculateOutcome(mission, baseData, contactIntensity, specialEvent);
 
             // PHASE 4: Consequences
-            ApplyConsequences(mission, baseData);
+            ApplyConsequences(mission, baseData, hadContact);
 
-            // PHASE 5: Pilot Progression
+            // PHASE 5: Outcome Finalization (Adjust for losses)
+            FinalizeResultBand(mission);
+
+            // PHASE 6: Pilot Progression
             ApplyProgression(mission);
+
+            // PHASE 7: Intel & Discovery
+            CheckDiscovery(mission);
 
             mission.Status = MissionStatus.Resolved;
             LogEntry(mission, $"Mission complete. Result: {mission.ResultBand}");
@@ -130,9 +138,28 @@ namespace AceManager.Core
         // ============================
         // PHASE 2: Contact & Engagement
         // ============================
-        private static int ResolveContact(MissionData mission, AirbaseData baseData)
+        private static int ResolveContact(MissionData mission, AirbaseData baseData, out string specialEvent)
         {
             LogEntry(mission, "=== PHASE 2: Contact & Engagement ===");
+            specialEvent = "";
+
+            // Check for special events based on mission type and timeline
+            if (mission.Type == MissionType.Interception || mission.Type == MissionType.Patrol)
+            {
+                if (_rng.Next(100) < 5) // 5% chance for Ace Encounter
+                {
+                    specialEvent = "AceEncounter";
+                    LogEntry(mission, "[b][color=red]ALERT:[/color][/b] Intelligence reports a renowned enemy Ace has been spotted in the sector!");
+                }
+            }
+            else if (mission.Type == MissionType.Reconnaissance || mission.Type == MissionType.Bombing)
+            {
+                if (_rng.Next(100) < 3) // 3% chance for Zeppelin
+                {
+                    specialEvent = "Zeppelin";
+                    LogEntry(mission, "[b][color=yellow]SIGHTING:[/color][/b] A massive enemy Zeppelin has been spotted through the cloud layer!");
+                }
+            }
 
             int contactChance = mission.Type switch
             {
@@ -177,18 +204,18 @@ namespace AceManager.Core
         // ============================
         // PHASE 3: Outcome Determination
         // ============================
-        private static MissionResultBand CalculateOutcome(MissionData mission, AirbaseData baseData, int contactIntensity)
+        private static MissionResultBand CalculateOutcome(MissionData mission, AirbaseData baseData, int contactIntensity, string specialEvent)
         {
             LogEntry(mission, "=== PHASE 3: Outcome Determination ===");
 
-            if (contactIntensity == 0)
+            if (contactIntensity == 0 && string.IsNullOrEmpty(specialEvent))
             {
                 LogEntry(mission, "Mission completed without opposition.");
                 return MissionResultBand.Success;
             }
 
             float friendlyScore = CalculateFriendlyEffectiveness(mission, baseData);
-            float enemyScore = CalculateEnemyEffectiveness(mission, contactIntensity);
+            float enemyScore = CalculateEnemyEffectiveness(mission, contactIntensity, specialEvent);
 
             LogEntry(mission, $"Friendly Score: {friendlyScore:F1} vs Enemy Score: {enemyScore:F1}");
 
@@ -284,6 +311,24 @@ namespace AceManager.Core
                     if (assignment.Pilot.HasSkill("ace")) score += 3;
                     if (assignment.Pilot.HasSkill("wingman")) score += 1.5f;
                     if (assignment.Pilot.HasSkill("steady")) score += 1;
+
+                    // v2.1 Airframe Stress & Sturdy Pilot Interaction
+                    if (assignment.Aircraft != null && assignment.Aircraft.AirframeStress > 20)
+                    {
+                        float stressPenalty = (assignment.Aircraft.AirframeStress - 20) / 30f; // Every 3 points above 20 is -0.1 effectiveness
+
+                        if (assignment.Pilot.HasSkill("sturdy"))
+                        {
+                            stressPenalty *= 0.25f; // 75% reduction in penalty for sturdy pilots
+                            LogEntry(mission, $"{assignment.Pilot.Name} (Sturdy) handles the twitchy airframe of {assignment.Aircraft.TailNumber} with ease.");
+                        }
+                        else if (stressPenalty > 1.0f)
+                        {
+                            LogEntry(mission, $"WARNING: {assignment.Pilot.Name} struggles with the severely warped airframe of {assignment.Aircraft.TailNumber}.");
+                        }
+
+                        score -= stressPenalty;
+                    }
                 }
 
                 // Missing crew penalty for two-seaters
@@ -301,10 +346,14 @@ namespace AceManager.Core
             return score;
         }
 
-        private static float CalculateEnemyEffectiveness(MissionData mission, int contactIntensity)
+        private static float CalculateEnemyEffectiveness(MissionData mission, int contactIntensity, string specialEvent)
         {
             float baseEnemy = 5 + (mission.TargetDistance * 2);
-            baseEnemy *= contactIntensity;
+            baseEnemy *= Math.Max(contactIntensity, 1);
+
+            if (specialEvent == "AceEncounter") baseEnemy *= 2.5f;
+            else if (specialEvent == "Zeppelin") baseEnemy *= 3.0f;
+
             baseEnemy += _rng.Next(-3, 4);
             return Math.Max(baseEnemy, 1);
         }
@@ -312,7 +361,7 @@ namespace AceManager.Core
         // ============================
         // PHASE 4: Consequences
         // ============================
-        private static void ApplyConsequences(MissionData mission, AirbaseData baseData)
+        private static void ApplyConsequences(MissionData mission, AirbaseData baseData, bool hadContact)
         {
             LogEntry(mission, "=== PHASE 4: Consequences ===");
 
@@ -326,8 +375,8 @@ namespace AceManager.Core
             // Losses based on result band
             CalculateLosses(mission);
 
-            // Enemy kills for successful missions
-            if (mission.ResultBand <= MissionResultBand.MarginalSuccess)
+            // Enemy kills for successful missions IF contact was made
+            if (hadContact && mission.ResultBand <= MissionResultBand.MarginalSuccess)
             {
                 mission.EnemyKills = mission.ResultBand switch
                 {
@@ -364,6 +413,34 @@ namespace AceManager.Core
                 if (GameManager.Instance.PlayerCaptain != null)
                 {
                     GameManager.Instance.PlayerCaptain.AddMerit(5);
+                }
+            }
+        }
+
+        private static void FinalizeResultBand(MissionData mission)
+        {
+            // Only adjust if it's currently a 'Success' band and we lost pilots
+            if (mission.ResultBand <= MissionResultBand.MarginalSuccess && mission.CrewKilled > 0)
+            {
+                // Exchange Ratio: How many enemies did we down per friendly killed?
+                float exchangeRatio = (mission.CrewKilled == 0) ? mission.EnemyKills : (float)mission.EnemyKills / mission.CrewKilled;
+
+                var oldBand = mission.ResultBand;
+
+                if (exchangeRatio < 1.0f) // Lost more than we killed
+                {
+                    // Downgrade by 2 steps
+                    mission.ResultBand = (MissionResultBand)Math.Min((int)mission.ResultBand + 2, (int)MissionResultBand.MarginalFailure);
+                }
+                else if (exchangeRatio < 3.0f) // Killed some, but lost some (not a clean victory)
+                {
+                    // Downgrade by 1 step
+                    mission.ResultBand = (MissionResultBand)Math.Min((int)mission.ResultBand + 1, (int)MissionResultBand.Stalemate);
+                }
+
+                if (oldBand != mission.ResultBand)
+                {
+                    LogEntry(mission, $"[b][color=orange]RESULT ADJUSTED:[/color][/b] Objectives were met, but heavy casualties ({mission.EnemyKills} vs {mission.CrewKilled}) have tempered the outcome.");
                 }
             }
         }
@@ -451,9 +528,79 @@ namespace AceManager.Core
                     LogEntry(mission, $"{pilot.Name} earned {meritGain} Merit for mission performance.");
                 }
 
+                // 6. Trait Breakout Logic (Rare)
+                CheckForTraitBreakout(mission, pilot);
+
                 // Apply the gains
                 pilot.ApplyDailyImprovements();
             }
+        }
+
+        private static void CheckForTraitBreakout(MissionData mission, CrewData pilot)
+        {
+            // Base chance is very rare (5%)
+            int chance = 5;
+
+            // Modifiers
+            if (pilot.Fatigue > 80) chance += 10;
+            if (mission.ResultBand == MissionResultBand.Disaster) chance += 15;
+            if (mission.ResultBand == MissionResultBand.DecisiveSuccess) chance += 10;
+
+            if (_rng.Next(100) >= chance) return;
+
+            bool isPositive = mission.ResultBand <= MissionResultBand.Success;
+
+            // Randomly determine if it's positive or negative regardless of result, 
+            // but success leans positive.
+            if (mission.ResultBand == MissionResultBand.Disaster) isPositive = false;
+            else if (mission.ResultBand == MissionResultBand.DecisiveSuccess) isPositive = true;
+            else isPositive = _rng.Next(100) < 50;
+
+            if (isPositive && pilot.PositiveTraits.Count < 3)
+            {
+                var trait = GeneratePositiveTrait(mission);
+                if (!pilot.HasTrait(trait.TraitId))
+                {
+                    pilot.PositiveTraits.Add(trait);
+                    LogEntry(mission, $"[b][color=green]BREAKOUT:[/color][/b] {pilot.Name} has developed a positive trait: [b]{trait.TraitName}[/b]!");
+                }
+            }
+            else if (!isPositive && pilot.NegativeTraits.Count < 4)
+            {
+                var trait = GenerateNegativeTrait(mission);
+                if (!pilot.HasTrait(trait.TraitId))
+                {
+                    pilot.NegativeTraits.Add(trait);
+                    LogEntry(mission, $"[b][color=red]BREAKOUT:[/color][/b] {pilot.Name} has developed a negative trait: [b]{trait.TraitName}[/b]!");
+
+                    if (pilot.NegativeTraits.Count >= 4)
+                    {
+                        // Breakdown!
+                        GameManager.Instance.Roster.HospitalizePilot(pilot, 7 + _rng.Next(8));
+                        LogEntry(mission, $"[b][color=red]BREAKDOWN:[/color][/b] The mental strain was too much. {pilot.Name} has been hospitalized.");
+                    }
+                }
+            }
+        }
+
+        private static PilotTrait GeneratePositiveTrait(MissionData mission)
+        {
+            return _rng.Next(3) switch
+            {
+                0 => PilotTrait.Create("deadeye", "Dead-Eye", "+10 Gunnery after confirmed success.", true, ("GUN", 10)),
+                1 => PilotTrait.Create("eagleeye", "Eagle-Eye", "+10 Offensive Awareness.", true, ("OA", 10)),
+                _ => PilotTrait.Create("ace_nerve", "Ace Nerve", "+10 Composure under pressure.", true, ("CMP", 10))
+            };
+        }
+
+        private static PilotTrait GenerateNegativeTrait(MissionData mission)
+        {
+            return _rng.Next(3) switch
+            {
+                0 => PilotTrait.Create("jittery", "Jittery", "-10 Gunnery and -10 Composure.", false, ("GUN", -10), ("CMP", -10)),
+                1 => PilotTrait.Create("cloud_blind", "Cloud Blind", "-15 Offensive Awareness.", false, ("OA", -15)),
+                _ => PilotTrait.Create("shell_shock", "Shell Shock", "-10 to all combat awareness.", false, ("OA", -10), ("DA", -10), ("TA", -10))
+            };
         }
 
         private static void CalculateLosses(MissionData mission)
@@ -522,6 +669,72 @@ namespace AceManager.Core
         {
             mission.MissionLog.Add(message);
             GD.Print($"[Mission] {message}");
+        }
+
+        private static float GetDistanceToSegment(Vector2 p, Vector2 a, Vector2 b)
+        {
+            Vector2 ab = b - a;
+            Vector2 ap = p - a;
+            float lengthSq = ab.LengthSquared();
+            if (lengthSq == 0) return ap.Length();
+
+            float t = Math.Max(0, Math.Min(1, ap.Dot(ab) / lengthSq));
+            Vector2 projection = a + t * ab;
+            return p.DistanceTo(projection);
+        }
+
+        private static void CheckDiscovery(MissionData mission)
+        {
+            var gm = GameManager.Instance;
+            if (gm?.SectorMap == null || mission.Waypoints == null || mission.Waypoints.Count < 2) return;
+
+            // Only discover if someone returns home
+            if (mission.Assignments.All(a => a.Aircraft.Status == AircraftStatus.Lost)) return;
+
+            // Use the recon rating from the flight assignments
+            float reconScore = 0;
+            foreach (var a in mission.Assignments)
+            {
+                reconScore += a.GetCombinedReconRating();
+            }
+
+            int distanceUnits = mission.TargetDistance;
+
+            // Filter hidden locations by proximity to flight segments
+            var hidden = gm.SectorMap.Locations.Where(l => !l.IsDiscovered).ToList();
+            var candidates = new List<MapLocation>();
+
+            foreach (var loc in hidden)
+            {
+                float minDistance = float.MaxValue;
+                for (int i = 0; i < mission.Waypoints.Count - 1; i++)
+                {
+                    float dist = GetDistanceToSegment(loc.WorldCoordinates, mission.Waypoints[i], mission.Waypoints[i + 1]);
+                    if (dist < minDistance) minDistance = dist;
+                }
+
+                // If within 15 units of any segment, it's a candidate
+                if (minDistance < 15f)
+                {
+                    candidates.Add(loc);
+                }
+            }
+
+            if (candidates.Count == 0) return;
+
+            // Base chance: 5% + distance scaling + recon bonus
+            float baseChance = 5 + (distanceUnits / 5f);
+            int roll = _rng.Next(100);
+
+            if (roll < baseChance + (reconScore / 10f))
+            {
+                var found = candidates[_rng.Next(candidates.Count)];
+                found.IsDiscovered = true;
+                found.DiscoveredDate = gm.CurrentDate;
+
+                LogEntry(mission, $"RECON REPORT: Pilots spotted and confirmed the location of [b]{found.Name}[/b] during the flight.");
+                GD.Print($"Location discovered: {found.Name}");
+            }
         }
     }
 }

@@ -4,41 +4,41 @@ using AceManager.Core;
 
 namespace AceManager.UI
 {
-	public partial class PilotCard : Control
-	{
-		private Label _nameLabel;
-		private Label _roleLabel;
-		private Label _statsLabel;
-		private Label _ratingsLabel;
-		private Label _recordLabel;
-		private Button _closeButton;
+    public partial class PilotCard : Control
+    {
+        private Label _nameLabel;
+        private Label _roleLabel;
+        private Label _statsLabel;
+        private RichTextLabel _ratingsLabel;
+        private RichTextLabel _recordLabel;
+        private Button _closeButton;
 
-		private CrewData _pilot;
+        private CrewData _pilot;
 
-		[Signal] public delegate void CardClosedEventHandler();
+        [Signal] public delegate void CardClosedEventHandler();
 
-		public override void _Ready()
-		{
-			_nameLabel = GetNode<Label>("%NameLabel");
-			_roleLabel = GetNode<Label>("%RoleLabel");
-			_statsLabel = GetNode<Label>("%StatsLabel");
-			_ratingsLabel = GetNode<Label>("%RatingsLabel");
-			_recordLabel = GetNode<Label>("%RecordLabel");
-			_closeButton = GetNode<Button>("%CloseButton");
+        public override void _Ready()
+        {
+            _nameLabel = GetNode<Label>("%NameLabel");
+            _roleLabel = GetNode<Label>("%RoleLabel");
+            _statsLabel = GetNode<Label>("%StatsLabel");
+            _ratingsLabel = GetNode<RichTextLabel>("%RatingsLabel");
+            _recordLabel = GetNode<RichTextLabel>("%RecordLabel");
+            _closeButton = GetNode<Button>("%CloseButton");
 
-			_closeButton.Pressed += OnClosePressed;
-		}
+            _closeButton.Pressed += OnClosePressed;
+        }
 
-		public void ShowPilot(CrewData pilot)
-		{
-			_pilot = pilot;
-			if (pilot == null) return;
+        public void ShowPilot(CrewData pilot)
+        {
+            _pilot = pilot;
+            if (pilot == null) return;
 
-			_nameLabel.Text = pilot.Name;
-			_roleLabel.Text = pilot.Role;
+            _nameLabel.Text = pilot.Name;
+            _roleLabel.Text = pilot.Role;
 
-			// Core Stats
-			_statsLabel.Text = $@"CORE STATS
+            // Core Stats
+            _statsLabel.Text = $@"CORE STATS
 Control (CTL): {pilot.CTL}
 Gunnery (GUN): {pilot.GUN}
 Energy Mgmt (ENG): {pilot.ENG}
@@ -55,8 +55,8 @@ Leadership (LDR): {pilot.LDR}
 Learning (LRN): {pilot.LRN}
 Stamina (STA): {pilot.STA}";
 
-			// Derived Ratings
-			_ratingsLabel.Text = $@"COMBAT RATINGS
+            // Derived Ratings
+            _ratingsLabel.Text = $@"COMBAT RATINGS
 Dogfight: {pilot.GetDogfightRating():F1}
 Energy Fighter: {pilot.GetEnergyFighterRating():F1}
 Ground Attack: {pilot.GetGroundAttackRating():F1}
@@ -68,16 +68,28 @@ SPECIAL SKILLS
 {(pilot.HasSkill("steady") ? "★ Steady Under Fire" : "")}
 {(pilot.HasSkill("survivor") ? "★ Natural Survivor" : "")}".Trim();
 
-			// TODO: Add mission/kill tracking when implemented
-			_recordLabel.Text = "SERVICE RECORD\nMissions: --\nKills: --\nWounds: --";
+            // Status & Service Record
+            string statusText = pilot.Status == PilotStatus.Active ? "[color=green]Active[/color]" :
+                             pilot.Status == PilotStatus.Wounded ? $"[color=yellow]Wounded ({pilot.RecoveryDays} days)[/color]" :
+                             pilot.Status == PilotStatus.Hospitalized ? $"[color=orange]Hospitalized ({pilot.RecoveryDays} days)[/color]" :
+                             "[color=red]KIA[/color]";
 
-			Show();
-		}
+            _recordLabel.Text = $"STATUS: {statusText}\n\nSERVICE RECORD\nMissions: {pilot.MissionsFlown}\nKills: {pilot.AerialVictories}\nGround: {pilot.GroundTargetsDestroyed}";
 
-		private void OnClosePressed()
-		{
-			EmitSignal(SignalName.CardClosed);
-			Hide();
-		}
-	}
+            // Traits
+            string traitsText = "\nTRAITS\n";
+            foreach (var t in pilot.PositiveTraits) traitsText += $"[color=green]★ {t.TraitName}[/color]\n";
+            foreach (var t in pilot.NegativeTraits) traitsText += $"[color=red]✖ {t.TraitName}[/color]\n";
+
+            _ratingsLabel.Text += traitsText;
+
+            Show();
+        }
+
+        private void OnClosePressed()
+        {
+            EmitSignal(SignalName.CardClosed);
+            Hide();
+        }
+    }
 }

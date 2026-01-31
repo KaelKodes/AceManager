@@ -1,9 +1,19 @@
 using Godot;
+using Godot.Collections;
 using System;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace AceManager.Core
 {
+    public enum PilotStatus
+    {
+        Active,
+        Wounded,
+        Hospitalized,
+        KIA
+    }
+
     public partial class CrewData : Resource
     {
         [Export] public string Name { get; set; }
@@ -37,6 +47,14 @@ namespace AceManager.Core
         [Export] public string CurrentRank { get; set; } = "Flight Sergeant";
         [Export] public string PrimaryRole { get; set; } = "Rookie";
         [Export] public string SecondaryRole { get; set; } = "";
+
+        // Status & Recovery
+        [Export] public PilotStatus Status { get; set; } = PilotStatus.Active;
+        [Export] public int RecoveryDays { get; set; } = 0;
+
+        // Traits (Rare Breakouts)
+        [Export] public Godot.Collections.Array<PilotTrait> PositiveTraits { get; set; } = new Godot.Collections.Array<PilotTrait>();
+        [Export] public Godot.Collections.Array<PilotTrait> NegativeTraits { get; set; } = new Godot.Collections.Array<PilotTrait>();
 
         // Progression Tracking
         public System.Collections.Generic.Dictionary<string, float> DailyImprovements { get; set; } = new System.Collections.Generic.Dictionary<string, float>();
@@ -78,6 +96,32 @@ namespace AceManager.Core
                 "STA" => STA,
                 _ => 0
             };
+        }
+
+        public int GetEffectiveStat(string statName)
+        {
+            return Math.Clamp(GetStatByName(statName) + GetTraitModifier(statName), 0, 100);
+        }
+
+        public int GetTraitModifier(string statName)
+        {
+            int mod = 0;
+            foreach (var trait in PositiveTraits)
+            {
+                if (trait != null && trait.StatModifiers.ContainsKey(statName))
+                    mod += (int)trait.StatModifiers[statName];
+            }
+            foreach (var trait in NegativeTraits)
+            {
+                if (trait != null && trait.StatModifiers.ContainsKey(statName))
+                    mod += (int)trait.StatModifiers[statName];
+            }
+            return mod;
+        }
+
+        public bool HasTrait(string traitId)
+        {
+            return PositiveTraits.Any(t => t?.TraitId == traitId) || NegativeTraits.Any(t => t?.TraitId == traitId);
         }
 
         public void ApplyDailyImprovements()
@@ -122,15 +166,15 @@ namespace AceManager.Core
         }
 
         // Derived Ratings
-        public float GetDogfightRating() => (0.25f * CTL) + (0.25f * GUN) + (0.20f * OA) + (0.15f * RFX) + (0.15f * ENG);
-        public float GetEnergyFighterRating() => (0.30f * ENG) + (0.25f * CTL) + (0.20f * OA) + (0.15f * DIS) + (0.10f * CMP);
-        public float GetGroundAttackRating() => (0.30f * DIS) + (0.25f * GUN) + (0.20f * CTL) + (0.15f * CMP) + (0.10f * STA);
-        public float GetReconSurvivalRating() => (0.35f * DA) + (0.25f * OA) + (0.20f * ADP) + (0.20f * CMP);
+        public float GetDogfightRating() => (0.25f * GetEffectiveStat("CTL")) + (0.25f * GetEffectiveStat("GUN")) + (0.20f * GetEffectiveStat("OA")) + (0.15f * GetEffectiveStat("RFX")) + (0.15f * GetEffectiveStat("ENG"));
+        public float GetEnergyFighterRating() => (0.30f * GetEffectiveStat("ENG")) + (0.25f * GetEffectiveStat("CTL")) + (0.20f * GetEffectiveStat("OA")) + (0.15f * GetEffectiveStat("DIS")) + (0.10f * GetEffectiveStat("CMP"));
+        public float GetGroundAttackRating() => (0.30f * GetEffectiveStat("DIS")) + (0.25f * GetEffectiveStat("GUN")) + (0.20f * GetEffectiveStat("CTL")) + (0.15f * GetEffectiveStat("CMP")) + (0.10f * GetEffectiveStat("STA"));
+        public float GetReconSurvivalRating() => (0.35f * GetEffectiveStat("DA")) + (0.25f * GetEffectiveStat("OA")) + (0.20f * GetEffectiveStat("ADP")) + (0.20f * GetEffectiveStat("CMP"));
 
         public int GetOverallRating()
         {
             // Simple average of 5 core combat stats for the roster OVR display
-            return (int)Math.Round((CTL + GUN + OA + DA + CMP) / 5.0f);
+            return (int)Math.Round((GetEffectiveStat("CTL") + GetEffectiveStat("GUN") + GetEffectiveStat("OA") + GetEffectiveStat("DA") + GetEffectiveStat("CMP")) / 5.0f);
         }
 
         public void UpdateRoles()
@@ -139,30 +183,30 @@ namespace AceManager.Core
 
             // 1) Fighter: (Dogfight Rating >= 70)
             float fightScore = GetDogfightRating();
-            if (fightScore >= 70 && OA >= 65 && CTL >= 65 && CMP >= 45)
+            if (fightScore >= 70 && GetEffectiveStat("OA") >= 65 && GetEffectiveStat("CTL") >= 65 && GetEffectiveStat("CMP") >= 45)
                 roleScores["Fighter"] = fightScore;
 
             // 2) Bomber: (Ground Attack Rating >= 65)
             float bombScore = GetGroundAttackRating();
-            if (bombScore >= 65 && DIS >= 65 && CMP >= 60)
+            if (bombScore >= 65 && GetEffectiveStat("DIS") >= 65 && GetEffectiveStat("CMP") >= 60)
                 roleScores["Bomber"] = bombScore;
 
             // 3) Recon: (Recon Survival Rating >= 65)
             float reconScore = GetReconSurvivalRating();
-            if (reconScore >= 65 && DA >= 70 && ADP >= 60)
+            if (reconScore >= 65 && GetEffectiveStat("DA") >= 70 && GetEffectiveStat("ADP") >= 60)
                 roleScores["Recon"] = reconScore;
 
             // 4) Gunner: (GUN >= 70, RFX >= 65)
-            if (GUN >= 70 && RFX >= 65 && DA >= 60)
-                roleScores["Gunner"] = (GUN + RFX + DA) / 3f;
+            if (GetEffectiveStat("GUN") >= 70 && GetEffectiveStat("RFX") >= 65 && GetEffectiveStat("DA") >= 60)
+                roleScores["Gunner"] = (GetEffectiveStat("GUN") + GetEffectiveStat("RFX") + GetEffectiveStat("DA")) / 3f;
 
             // 5) Mentor: (TA >= 70, DIS >= 65, CMP >= 65)
-            if (TA >= 70 && DIS >= 65 && CMP >= 65)
-                roleScores["Mentor"] = (TA + DIS + CMP) / 3f;
+            if (GetEffectiveStat("TA") >= 70 && GetEffectiveStat("DIS") >= 65 && GetEffectiveStat("CMP") >= 65)
+                roleScores["Mentor"] = (GetEffectiveStat("TA") + GetEffectiveStat("DIS") + GetEffectiveStat("CMP")) / 3f;
 
             // 6) Anti-Personnel: (GUN >= 65, AGG >= 70)
-            if (GUN >= 65 && AGG >= 70 && DIS >= 45)
-                roleScores["Strafing Specialist"] = (GUN + AGG) / 2f;
+            if (GetEffectiveStat("GUN") >= 65 && GetEffectiveStat("AGG") >= 70 && GetEffectiveStat("DIS") >= 45)
+                roleScores["Strafing Specialist"] = (GetEffectiveStat("GUN") + GetEffectiveStat("AGG")) / 2f;
 
             // Sort by score
             var sortedRoles = roleScores.OrderByDescending(x => x.Value).ToList();
@@ -188,7 +232,7 @@ namespace AceManager.Core
             int[] meritThresholds = { 0, 50, 150, 400, 1000 };
             int[] missionThresholds = { 0, 10, 30, 75, 150 };
 
-            int currentIndex = Array.IndexOf(ranks, CurrentRank);
+            int currentIndex = System.Array.IndexOf(ranks, CurrentRank);
             if (currentIndex == -1) currentIndex = 0;
 
             for (int i = ranks.Length - 1; i > currentIndex; i--)
@@ -206,14 +250,15 @@ namespace AceManager.Core
         {
             switch (skillName.ToLower())
             {
-                case "ace": return OA >= 70 && GUN >= 70 && ENG >= 70;
-                case "wingman": return TA >= 70 && WI >= 70 && DA >= 70;
-                case "steady": return CMP >= 70 && DA >= 70;
-                case "survivor": return DA >= 70 && ADP >= 70 && CMP >= 70;
-                case "overwatch": return DA >= 70 && TA >= 70 && CMP >= 70;
-                case "pack hunter": return OA >= 70 && TA >= 70 && DIS >= 70;
-                case "flight leader": return LDR >= 70 && TA >= 70;
-                case "instructor": return LDR >= 70 && DIS >= 70 && LRN >= 70;
+                case "ace": return GetEffectiveStat("OA") >= 70 && GetEffectiveStat("GUN") >= 70 && GetEffectiveStat("ENG") >= 70;
+                case "wingman": return GetEffectiveStat("TA") >= 70 && GetEffectiveStat("WI") >= 70 && GetEffectiveStat("DA") >= 70;
+                case "steady": return GetEffectiveStat("CMP") >= 70 && GetEffectiveStat("DA") >= 70;
+                case "survivor": return GetEffectiveStat("DA") >= 70 && GetEffectiveStat("ADP") >= 70 && GetEffectiveStat("CMP") >= 70;
+                case "overwatch": return GetEffectiveStat("DA") >= 70 && GetEffectiveStat("TA") >= 70 && GetEffectiveStat("CMP") >= 70;
+                case "pack hunter": return GetEffectiveStat("OA") >= 70 && GetEffectiveStat("TA") >= 70 && GetEffectiveStat("DIS") >= 70;
+                case "flight leader": return GetEffectiveStat("LDR") >= 70 && GetEffectiveStat("TA") >= 70;
+                case "instructor": return GetEffectiveStat("LDR") >= 70 && GetEffectiveStat("DIS") >= 70 && GetEffectiveStat("LRN") >= 70;
+                case "sturdy": return GetEffectiveStat("STA") >= 75 && GetEffectiveStat("CMP") >= 60; // Resistant to airframe stress
                 default: return false;
             }
         }

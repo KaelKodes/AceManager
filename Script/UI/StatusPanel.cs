@@ -22,6 +22,7 @@ namespace AceManager.UI
         private Button _viewDebriefButton;
         private Button _viewMapButton;
         private Button _viewRosterButton;
+        private Control _mapContainer;
 
         // Panels (loaded dynamically)
         private Control _missionPlanningPanel;
@@ -36,6 +37,7 @@ namespace AceManager.UI
         private PackedScene _commandMapScene;
         private PackedScene _rosterPanelScene;
         private PackedScene _infoPopupScene;
+        private PackedScene _nationSelectionScene;
 
         public override void _Ready()
         {
@@ -53,8 +55,8 @@ namespace AceManager.UI
             _planMissionButton = GetNode<Button>("%PlanMissionButton");
             _viewBriefingButton = GetNode<Button>("%ViewBriefingButton");
             _viewDebriefButton = GetNode<Button>("%ViewDebriefButton");
-            _viewMapButton = GetNode<Button>("%ViewMapButton");
             _viewRosterButton = GetNode<Button>("%RosterButton");
+            _mapContainer = GetNode<Control>("%MapContainer");
 
             // Load panel scenes
             _planningPanelScene = GD.Load<PackedScene>("res://Scene/UI/MissionPlanningPanel.tscn");
@@ -63,6 +65,7 @@ namespace AceManager.UI
             _commandMapScene = GD.Load<PackedScene>("res://Scene/UI/CommandMapPanel.tscn");
             _rosterPanelScene = GD.Load<PackedScene>("res://Scene/UI/RosterPanel.tscn");
             _infoPopupScene = GD.Load<PackedScene>("res://Scene/UI/InfoPopup.tscn");
+            _nationSelectionScene = GD.Load<PackedScene>("res://Scene/UI/NationSelectionPanel.tscn");
 
             // Enable clicks on Captain labels
             _captainNameLabel.MouseFilter = MouseFilterEnum.Stop;
@@ -70,28 +73,66 @@ namespace AceManager.UI
             _captainRankLabel.MouseFilter = MouseFilterEnum.Stop;
             _captainRankLabel.GuiInput += (eventArgs) => OnCaptainClicked(eventArgs);
 
-            _briefingPanelScene = GD.Load<PackedScene>("res://Scene/UI/DailyBriefingPanel.tscn");
-            _commandMapScene = GD.Load<PackedScene>("res://Scene/UI/CommandMapPanel.tscn");
-            _rosterPanelScene = GD.Load<PackedScene>("res://Scene/UI/RosterPanel.tscn");
-            _infoPopupScene = GD.Load<PackedScene>("res://Scene/UI/InfoPopup.tscn");
-
-            // Enable clicks on Captain labels
-            _captainNameLabel.MouseFilter = MouseFilterEnum.Stop;
-            _captainNameLabel.GuiInput += (eventArgs) => OnCaptainClicked(eventArgs);
-            _captainRankLabel.MouseFilter = MouseFilterEnum.Stop;
-            _captainRankLabel.GuiInput += (eventArgs) => OnCaptainClicked(eventArgs);
             _advanceButton.Pressed += () => GameManager.Instance.AdvanceDay();
             _planMissionButton.Pressed += OnPlanMissionPressed;
             _viewBriefingButton.Pressed += OnViewBriefingPressed;
             _viewDebriefButton.Pressed += OnViewDebriefPressed;
-            _viewMapButton.Pressed += OnViewMapPressed;
             _viewRosterButton.Pressed += OnViewRosterPressed;
+
             GameManager.Instance.DayAdvanced += OnDayAdvanced;
             GameManager.Instance.MissionCompleted += OnMissionCompleted;
             GameManager.Instance.BriefingReady += OnBriefingReady;
 
-            UpdateUI();
-            UpdateBriefingButtonStates();
+            // Check if we need to pick a nation (Campaign Start)
+            if (string.IsNullOrEmpty(GameManager.Instance.SelectedNation))
+            {
+                ShowNationSelection();
+            }
+            else
+            {
+                UpdateUI();
+                UpdateBriefingButtonStates();
+            }
+
+            // Initialize Background Map
+            InitializeCentralMap();
+        }
+
+        private void InitializeCentralMap()
+        {
+            if (_mapContainer == null) return;
+
+            _commandMapPanel = _commandMapScene.Instantiate<Control>();
+            _mapContainer.AddChild(_commandMapPanel);
+
+            var mapPanel = _commandMapPanel as CommandMapPanel;
+            if (mapPanel != null)
+            {
+                mapPanel.ShowMap(GameManager.Instance.SectorMap);
+                mapPanel.SetAsBackground(true);
+            }
+        }
+
+        private void ShowNationSelection()
+        {
+            var selector = _nationSelectionScene.Instantiate<NationSelectionPanel>();
+            AddChild(selector);
+            selector.NationSelected += (nation) =>
+            {
+                UpdateUI();
+                UpdateBriefingButtonStates();
+                RefreshMap();
+            };
+        }
+
+        private void RefreshMap()
+        {
+            var mapPanel = _commandMapPanel as CommandMapPanel;
+            if (mapPanel != null && GameManager.Instance.SectorMap != null)
+            {
+                mapPanel.ShowMap(GameManager.Instance.SectorMap);
+                mapPanel.SetAsBackground(true);
+            }
         }
 
         private void OnDayAdvanced()
@@ -99,6 +140,7 @@ namespace AceManager.UI
             UpdateUI();
             UpdateMissionButtonState();
             UpdateBriefingButtonStates();
+            RefreshMap();
         }
 
         private void OnViewBriefingPressed()
@@ -133,21 +175,7 @@ namespace AceManager.UI
 
         private void OnViewMapPressed()
         {
-            var mapData = GameManager.Instance.SectorMap;
-            if (mapData == null)
-            {
-                GD.Print("No sector map data available.");
-                return;
-            }
-
-            if (!GodotObject.IsInstanceValid(_commandMapPanel))
-            {
-                _commandMapPanel = _commandMapScene.Instantiate<Control>();
-                AddChild(_commandMapPanel);
-            }
-
-            var mapPanel = _commandMapPanel as CommandMapPanel;
-            mapPanel?.ShowMap(mapData);
+            // Now handled by central map
         }
 
         private void OnViewRosterPressed()
@@ -211,13 +239,27 @@ namespace AceManager.UI
                 _missionPlanningPanel = _planningPanelScene.Instantiate<Control>();
                 AddChild(_missionPlanningPanel);
                 _missionPlanningPanel.Connect("PanelClosed", Callable.From(OnPlanningPanelClosed));
+
+                var planning = _missionPlanningPanel as MissionPlanningPanel;
+                planning?.Connect(MissionPlanningPanel.SignalName.MissionSettingsChanged,
+                    Callable.From<Godot.Collections.Array<Vector2>>(w => OnMissionSettingsChanged(w)));
             }
             else
             {
                 _missionPlanningPanel.Show();
             }
+
+            // Update map when mission is planned
+            var mapPanel = _commandMapPanel as CommandMapPanel;
+            mapPanel?.ShowMap(GameManager.Instance.SectorMap);
         }
 
+
+        private void OnMissionSettingsChanged(Godot.Collections.Array<Vector2> waypoints)
+        {
+            var mapPanel = _commandMapPanel as CommandMapPanel;
+            mapPanel?.DrawPreviewPath(new System.Collections.Generic.List<Vector2>(waypoints));
+        }
 
         private void OnPlanningPanelClosed()
         {
@@ -250,20 +292,23 @@ namespace AceManager.UI
             bool canFly = true;
             string tooltip = "Plan and launch a mission";
 
+            bool isGrounded = gm.TodaysBriefing != null && gm.TodaysBriefing.IsFlightGrounded();
+
             // Check if already flew today
             if (gm.MissionCompletedToday)
             {
                 canFly = false;
-                tooltip = "Mission already completed today";
+                tooltip = "Activity already completed today";
             }
-            // Check weather
-            else if (gm.TodaysBriefing != null && gm.TodaysBriefing.IsFlightGrounded())
+            // Check weather - allow Training if grounded
+            else if (isGrounded)
             {
-                canFly = false;
-                tooltip = "Grounded - weather too severe";
+                canFly = true;
+                tooltip = "Grounded - conduct ground school training instead";
             }
 
             _planMissionButton.Disabled = !canFly;
+            _planMissionButton.Text = isGrounded ? "Plan Training" : "Plan Mission";
             _planMissionButton.TooltipText = tooltip;
         }
 
@@ -271,11 +316,11 @@ namespace AceManager.UI
         public void UpdateUI()
         {
             var gm = GameManager.Instance;
-            _dateLabel.Text = $"Date: {gm.CurrentDate.ToString("MMM d, yyyy")}";
+            _dateLabel.Text = gm.CurrentDate.ToString("MMM d, yyyy");
 
             if (gm.CurrentBase != null)
             {
-                _baseNameLabel.Text = $"Base: {gm.CurrentBase.Name} ({ToRoman(gm.CurrentBase.BaseLevel)})";
+                _baseNameLabel.Text = $"{gm.CurrentBase.Name} ({ToRoman(gm.CurrentBase.BaseLevel)})";
                 _fuelLabel.Text = $"Fuel: {gm.CurrentBase.CurrentFuel:F0}";
                 _ammoLabel.Text = $"Ammo: {gm.CurrentBase.CurrentAmmo:F0}";
 
@@ -292,8 +337,8 @@ namespace AceManager.UI
         private void UpdatePersonnelDisplay(GameManager gm)
         {
             int available = gm.Roster?.GetAvailablePilots().Count ?? 0;
-            int total = gm.Roster?.Roster.Count ?? 0;
-            _pilotsLabel.Text = $"Pilots: {available}/{total}";
+            int maxPilots = gm.CurrentBase?.GetMaxPilotCapacity() ?? 8;
+            _pilotsLabel.Text = $"Pilots: {available}/{maxPilots}";
 
             // Group aircraft by type
             var aircraftCounts = new System.Collections.Generic.Dictionary<string, int>();
@@ -305,13 +350,18 @@ namespace AceManager.UI
                 aircraftCounts[name]++;
             }
 
-            // Format: "Aircraft: 4x BE.2c, 2x DH.2"
+            // Format: "Aircraft: 6/6 (6x BE.2c)"
             var parts = new System.Collections.Generic.List<string>();
             foreach (var kvp in aircraftCounts)
             {
                 parts.Add($"{kvp.Value}x {kvp.Key}");
             }
-            _aircraftLabel.Text = parts.Count > 0 ? string.Join(", ", parts) : "None";
+
+            int currentAircraft = gm.AircraftInventory.Count;
+            int maxAircraft = gm.CurrentBase?.GetMaxAircraftCapacity() ?? 6;
+            string types = parts.Count > 0 ? $"({string.Join(", ", parts)})" : "";
+
+            _aircraftLabel.Text = $"Aircraft: {currentAircraft}/{maxAircraft} {types}";
         }
 
         private void UpdateCaptainDisplay(GameManager gm)
@@ -340,6 +390,20 @@ namespace AceManager.UI
             AddRatingRow("Medical", baseData.MedicalRating);
             AddRatingRow("Transport", baseData.TransportAccessRating);
             AddRatingRow("Training", baseData.TrainingFacilitiesRating);
+
+            if (GameManager.Instance.ActiveUpgrade != null)
+            {
+                var label = new Label
+                {
+                    Text = $"[UPGRADING {GameManager.Instance.ActiveUpgrade.FacilityName.ToUpper()}... {GameManager.Instance.ActiveUpgrade.DaysRemaining}D]",
+                    HorizontalAlignment = HorizontalAlignment.Center
+                };
+                label.AddThemeColorOverride("font_color", new Color(0.4f, 0.8f, 1.0f));
+                label.CustomMinimumSize = new Vector2(0, 30);
+                _ratingsContainer.AddChild(label);
+                // Need an empty label for the second column
+                _ratingsContainer.AddChild(new Control());
+            }
         }
 
         private void AddRatingRow(string name, int rating)
@@ -377,7 +441,9 @@ namespace AceManager.UI
             if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
             {
                 string desc = GetFacilityDescription(facilityName, rating);
-                ShowInfo($"{facilityName} Facility (Level {ToRoman(rating)})", desc);
+                var popup = _infoPopupScene.Instantiate<AceManager.UI.InfoPopup>();
+                AddChild(popup);
+                popup.ShowFacility(facilityName, rating, desc);
             }
         }
 

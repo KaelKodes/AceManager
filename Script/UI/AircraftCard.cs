@@ -12,6 +12,8 @@ namespace AceManager.UI
         private Label _performanceLabel;
         private Label _conditionLabel;
         private Button _closeButton;
+        private Button _repairButton;
+        private Button _scrapButton;
 
         private AircraftInstance _aircraft;
 
@@ -25,8 +27,12 @@ namespace AceManager.UI
             _performanceLabel = GetNode<Label>("%PerformanceLabel");
             _conditionLabel = GetNode<Label>("%ConditionLabel");
             _closeButton = GetNode<Button>("%CloseButton");
+            _repairButton = GetNode<Button>("%RepairButton");
+            _scrapButton = GetNode<Button>("%ScrapButton");
 
             _closeButton.Pressed += OnClosePressed;
+            _repairButton.Pressed += OnRepairPressed;
+            _scrapButton.Pressed += OnScrapPressed;
         }
 
         public void ShowAircraft(AircraftInstance aircraft)
@@ -79,14 +85,39 @@ Durability: {def.GetDurabilityScore():F1}";
             // Current condition
             string conditionColor = aircraft.Condition >= 80 ? "Good" :
                                     aircraft.Condition >= 50 ? "Fair" : "Poor";
+
+            string stressInfo = aircraft.AirframeStress > 50 ? $"\n[!] Airframe Stress: {aircraft.AirframeStress}" :
+                                aircraft.AirframeStress > 0 ? $"\nAirframe Stress: {aircraft.AirframeStress}" : "";
+
             _conditionLabel.Text = $@"AIRCRAFT STATUS
-Condition: {aircraft.Condition}% ({conditionColor})
+Condition: {aircraft.Condition}% ({conditionColor}){stressInfo}
 Hours Flown: {aircraft.HoursFlown:F1}
 Missions Survived: {aircraft.MissionsSurvived}
 Kills: {aircraft.Kills}
 {(aircraft.RepairDaysRemaining > 0 ? $"Repair Days Left: {aircraft.RepairDaysRemaining}" : "")}";
 
+            // Button visibility
+            bool canRepair = aircraft.Condition < 100 && aircraft.Status != AircraftStatus.Repairing && aircraft.Status != AircraftStatus.Assigned;
+            bool canScrap = aircraft.Status != AircraftStatus.Assigned && aircraft.Status != AircraftStatus.Lost;
+
+            _repairButton.Visible = canRepair;
+            _scrapButton.Visible = canScrap;
+
             Show();
+        }
+
+        private void OnRepairPressed()
+        {
+            if (_aircraft == null) return;
+            GameManager.Instance.RepairAircraft(_aircraft);
+            ShowAircraft(_aircraft); // Refresh
+        }
+
+        private void OnScrapPressed()
+        {
+            if (_aircraft == null) return;
+            GameManager.Instance.ScrapAircraft(_aircraft);
+            OnClosePressed();
         }
 
         private void OnClosePressed()

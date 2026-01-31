@@ -9,7 +9,8 @@ namespace AceManager.Core
         Assigned,
         Repairing,
         Damaged,
-        Lost
+        Lost,
+        Scrap
     }
 
     public partial class AircraftInstance : Resource
@@ -25,6 +26,9 @@ namespace AceManager.Core
         [Export] public int Kills { get; set; } = 0;
         public AircraftStatus Status { get; set; } = AircraftStatus.Ready;
         public int RepairDaysRemaining { get; set; } = 0;
+
+        [Export] public int AirframeStress { get; set; } = 0;
+        [Export] public int TotalRepairs { get; set; } = 0;
 
         private static int _tailCounter = 100;
         private static Random _rng = new Random();
@@ -70,6 +74,7 @@ namespace AceManager.Core
                 AircraftStatus.Repairing => $"Repairing ({RepairDaysRemaining}d)",
                 AircraftStatus.Damaged => $"Damaged ({Condition}%)",
                 AircraftStatus.Lost => "Lost",
+                AircraftStatus.Scrap => "Scrap (Salvage)",
                 _ => "Unknown"
             };
         }
@@ -88,7 +93,7 @@ namespace AceManager.Core
         public void ApplyDamage(int damage)
         {
             Condition = Math.Max(0, Condition - damage);
-            
+
             if (Condition <= 0)
             {
                 Status = AircraftStatus.Lost;
@@ -101,10 +106,19 @@ namespace AceManager.Core
 
         public void StartRepair()
         {
-            if (Status == AircraftStatus.Damaged)
+            if (Condition < 100)
             {
+                // Calculate Stress based on severity
+                if (Condition < 40)
+                    AirframeStress += 10;
+                else if (Condition < 75)
+                    AirframeStress += 2;
+
+                TotalRepairs++;
+
                 int damageToRepair = 100 - Condition;
-                RepairDaysRemaining = Math.Max(1, damageToRepair / 15); // ~15% per day
+                // Faster repair if only slightly damaged, but at least 1 day.
+                RepairDaysRemaining = Math.Max(1, (int)Math.Ceiling(damageToRepair / 15.0));
                 Status = AircraftStatus.Repairing;
             }
         }
@@ -115,7 +129,7 @@ namespace AceManager.Core
             {
                 RepairDaysRemaining--;
                 Condition = Math.Min(100, Condition + 15);
-                
+
                 if (RepairDaysRemaining <= 0)
                 {
                     Status = AircraftStatus.Ready;

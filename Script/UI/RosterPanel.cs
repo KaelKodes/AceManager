@@ -14,6 +14,10 @@ namespace AceManager.UI
         private Button _closeButton;
 
         private PackedScene _infoPopupScene;
+        private PackedScene _pilotCardScene;
+        private PackedScene _aircraftCardScene;
+        private PilotCard _pilotCard;
+        private AircraftCard _aircraftCard;
 
         private int _pilotSortColumn = 2; // Default to OVR
         private bool _pilotSortAscending = false;
@@ -42,6 +46,9 @@ namespace AceManager.UI
             SetupHeaders();
             PopulateLists();
             UpdateLegend();
+
+            _pilotTree.TooltipText = "Double-click to view Pilot Details";
+            _aircraftTree.TooltipText = "Double-click to view Aircraft Details";
         }
 
         private void UpdateLegend()
@@ -219,8 +226,21 @@ namespace AceManager.UI
             var pilot = GameManager.Instance.Roster.GetPilotByName(name);
             if (pilot != null)
             {
-                ShowInfo(pilot.Name, GetPilotDetails(pilot));
+                ShowPilotCard(pilot);
             }
+        }
+
+        private void ShowPilotCard(CrewData pilot)
+        {
+            if (_pilotCardScene == null)
+                _pilotCardScene = GD.Load<PackedScene>("res://Scene/UI/PilotCard.tscn");
+
+            if (_pilotCard == null)
+            {
+                _pilotCard = _pilotCardScene.Instantiate<PilotCard>();
+                AddChild(_pilotCard);
+            }
+            _pilotCard.ShowPilot(pilot);
         }
 
         private void OnAircraftActivated()
@@ -232,8 +252,21 @@ namespace AceManager.UI
             var plane = GameManager.Instance.AircraftInventory.FirstOrDefault(a => a.TailNumber == tail);
             if (plane != null)
             {
-                ShowInfo(plane.GetDisplayName(), GetAircraftDetails(plane));
+                ShowAircraftCard(plane);
             }
+        }
+
+        private void ShowAircraftCard(AircraftInstance aircraft)
+        {
+            if (_aircraftCardScene == null)
+                _aircraftCardScene = GD.Load<PackedScene>("res://Scene/UI/AircraftCard.tscn");
+
+            if (_aircraftCard == null)
+            {
+                _aircraftCard = _aircraftCardScene.Instantiate<AircraftCard>();
+                AddChild(_aircraftCard);
+            }
+            _aircraftCard.ShowAircraft(aircraft);
         }
 
         private void ShowInfo(string title, string content)

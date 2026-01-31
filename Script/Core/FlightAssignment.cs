@@ -53,22 +53,23 @@ namespace AceManager.Core
 
         public int GetCrewCount()
         {
-            int count = 1; // Pilot always present
-            if (Gunner != null) count++;
-            if (Observer != null) count++;
-            return count;
+            var crew = new System.Collections.Generic.HashSet<CrewData>();
+            if (Pilot != null) crew.Add(Pilot);
+            if (Gunner != null) crew.Add(Gunner);
+            if (Observer != null) crew.Add(Observer);
+            return crew.Count;
         }
 
         public string GetDisplayName()
         {
             string display = $"{Aircraft?.GetDisplayName() ?? "No Aircraft"}";
             display += $" - {Pilot?.Name ?? "No Pilot"}";
-            
+
             if (Gunner != null)
                 display += $" / {Gunner.Name} (Gunner)";
             if (Observer != null)
                 display += $" / {Observer.Name} (Observer)";
-                
+
             return display;
         }
 
@@ -76,21 +77,21 @@ namespace AceManager.Core
         public float GetCombinedDogfightRating()
         {
             float rating = Pilot?.GetDogfightRating() ?? 0;
-            
+
             // Gunner contributes to defensive capability
             if (Gunner != null)
             {
                 rating += Gunner.GUN * 0.3f; // Gunner's shooting helps
                 rating += Gunner.DA * 0.2f;  // Defensive awareness
             }
-            
+
             return rating;
         }
 
         public float GetCombinedReconRating()
         {
             float rating = Pilot?.GetReconSurvivalRating() ?? 0;
-            
+
             // Observer significantly boosts recon
             if (Observer != null)
             {
@@ -102,14 +103,14 @@ namespace AceManager.Core
                 // Gunner can observe but not as effectively
                 rating += Gunner.OA * 0.2f;
             }
-            
+
             return rating;
         }
 
         public float GetDefensiveRating()
         {
             float rating = Pilot?.DA ?? 0;
-            
+
             // Rear gunner is crucial for two-seater defense
             if (Gunner != null)
             {
@@ -117,14 +118,14 @@ namespace AceManager.Core
                 rating += Gunner.RFX * 0.3f;
                 rating += Gunner.DA * 0.2f;
             }
-            
+
             return rating;
         }
 
         public float GetBombingRating()
         {
             float rating = Pilot?.GetGroundAttackRating() ?? 0;
-            
+
             // Observer/Gunner helps with bomb aiming and defense
             if (Observer != null)
             {
@@ -135,7 +136,7 @@ namespace AceManager.Core
             {
                 rating += Gunner.DIS * 0.1f;
             }
-            
+
             return rating;
         }
     }

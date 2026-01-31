@@ -20,6 +20,16 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.12549, 0.141176, 0.172549, 1)
 
+[node name="MapContainer" type="Control" parent="." unique_id=987654321]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=1667641491]
 layout_mode = 1
 anchors_preset = 15
@@ -27,158 +37,150 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=907577838]
+[node name="Header" type="HBoxContainer" parent="MarginContainer" unique_id=2102084652]
 layout_mode = 2
-theme_override_constants/separation = 20
+size_flags_horizontal = 0
+size_flags_vertical = 0
 
-[node name="Header" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=2102084652]
-layout_mode = 2
-
-[node name="DateLabel" type="Label" parent="MarginContainer/VBoxContainer/Header" unique_id=2098480147]
+[node name="DateLabel" type="Label" parent="MarginContainer/Header" unique_id=2098480147]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
-text = "Date: Feb 8, 1917"
+text = "Aug 13, 1914"
 
-[node name="Control" type="Control" parent="MarginContainer/VBoxContainer/Header" unique_id=1074736103]
+[node name="Control" type="Control" parent="MarginContainer/Header" unique_id=1074736103]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="BaseNameLabel" type="Label" parent="MarginContainer/VBoxContainer/Header" unique_id=197283532]
-unique_name_in_owner = true
+[node name="RatingsPanel" type="VBoxContainer" parent="MarginContainer" unique_id=542914217]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "Base: St-Omer"
+size_flags_horizontal = 0
+size_flags_vertical = 4
 
-[node name="MainSplit" type="HSplitContainer" parent="MarginContainer/VBoxContainer" unique_id=1405438625]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="RatingsPanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/MainSplit" unique_id=542914217]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 10
-
-[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/MainSplit/RatingsPanel" unique_id=57998680]
+[node name="Label" type="Label" parent="MarginContainer/RatingsPanel" unique_id=57998680]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Base Ratings"
 
-[node name="RatingsContainer" type="GridContainer" parent="MarginContainer/VBoxContainer/MainSplit/RatingsPanel" unique_id=804691597]
+[node name="RatingsContainer" type="GridContainer" parent="MarginContainer/RatingsPanel" unique_id=804691597]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/h_separation = 20
 theme_override_constants/v_separation = 10
 columns = 2
 
-[node name="ResourcePanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/MainSplit" unique_id=1688566707]
-custom_minimum_size = Vector2(300, 0)
+[node name="Footer" type="HBoxContainer" parent="MarginContainer" unique_id=1222673665]
 layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="CaptainTitle" type="Label" parent="MarginContainer/VBoxContainer/MainSplit/ResourcePanel"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "═══ COMMANDING OFFICER ═══"
-horizontal_alignment = 1
-
-[node name="CaptainNameLabel" type="Label" parent="MarginContainer/VBoxContainer/MainSplit/ResourcePanel"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Capt. James Whitmore"
-horizontal_alignment = 1
-
-[node name="CaptainRankLabel" type="Label" parent="MarginContainer/VBoxContainer/MainSplit/ResourcePanel"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Rank: Captain"
-horizontal_alignment = 1
-
-[node name="CaptainMeritLabel" type="Label" parent="MarginContainer/VBoxContainer/MainSplit/ResourcePanel"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Merit: 0 pts"
-horizontal_alignment = 1
-
-[node name="HSeparatorCO" type="HSeparator" parent="MarginContainer/VBoxContainer/MainSplit/ResourcePanel"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/MainSplit/ResourcePanel" unique_id=1764870993]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "Resources"
-horizontal_alignment = 1
-
-[node name="FuelLabel" type="Label" parent="MarginContainer/VBoxContainer/MainSplit/ResourcePanel"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Fuel: 1000"
-horizontal_alignment = 1
-
-[node name="AmmoLabel" type="Label" parent="MarginContainer/VBoxContainer/MainSplit/ResourcePanel"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Ammo: 500"
-horizontal_alignment = 1
-
-[node name="HSeparator1" type="HSeparator" parent="MarginContainer/VBoxContainer/MainSplit/ResourcePanel"]
-layout_mode = 2
-
-[node name="PilotsLabel" type="Label" parent="MarginContainer/VBoxContainer/MainSplit/ResourcePanel"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Pilots: 8/8"
-horizontal_alignment = 1
-
-[node name="AircraftLabel" type="Label" parent="MarginContainer/VBoxContainer/MainSplit/ResourcePanel"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "4x BE.2c"
-horizontal_alignment = 1
-
-[node name="Footer" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=1222673665]
-layout_mode = 2
+size_flags_vertical = 8
 theme_override_constants/separation = 15
 alignment = 1
 
-[node name="ViewBriefingButton" type="Button" parent="MarginContainer/VBoxContainer/Footer"]
+[node name="ViewBriefingButton" type="Button" parent="MarginContainer/Footer" unique_id=55751379]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(130, 50)
 layout_mode = 2
 text = "Briefing"
 
-[node name="ViewMapButton" type="Button" parent="MarginContainer/VBoxContainer/Footer"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-text = "Command Map"
-
-[node name="PlanMissionButton" type="Button" parent="MarginContainer/VBoxContainer/Footer" unique_id=2010809763]
+[node name="PlanMissionButton" type="Button" parent="MarginContainer/Footer" unique_id=2010809763]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(180, 50)
 layout_mode = 2
 text = "Plan Mission"
 
-[node name="RosterButton" type="Button" parent="MarginContainer/VBoxContainer/Footer"]
+[node name="RosterButton" type="Button" parent="MarginContainer/Footer" unique_id=1015563111]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(140, 50)
 layout_mode = 2
 text = "Roster"
 
-[node name="ViewDebriefButton" type="Button" parent="MarginContainer/VBoxContainer/Footer"]
+[node name="ViewDebriefButton" type="Button" parent="MarginContainer/Footer" unique_id=172123596]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(140, 50)
 layout_mode = 2
 text = "View Debrief"
 
-[node name="AdvanceButton" type="Button" parent="MarginContainer/VBoxContainer/Footer" unique_id=190856123]
+[node name="AdvanceButton" type="Button" parent="MarginContainer/Footer" unique_id=190856123]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(180, 50)
 layout_mode = 2
 text = "Advance Day"
 
+[node name="ResourcePanel" type="VBoxContainer" parent="MarginContainer" unique_id=1688566707]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+theme_override_constants/separation = 10
+
+[node name="BaseNameLabel" type="Label" parent="MarginContainer/ResourcePanel" unique_id=197283532]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "St-Omer Aerodrome (I)"
+horizontal_alignment = 1
+
+[node name="CaptainTitle" type="Label" parent="MarginContainer/ResourcePanel" unique_id=1170831609]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "═══ COMMANDING OFFICER ═══"
+horizontal_alignment = 1
+
+[node name="CaptainNameLabel" type="Label" parent="MarginContainer/ResourcePanel" unique_id=466430970]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Capt. James Whitmore"
+horizontal_alignment = 1
+
+[node name="CaptainRankLabel" type="Label" parent="MarginContainer/ResourcePanel" unique_id=1973301280]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Rank: Captain"
+horizontal_alignment = 1
+
+[node name="CaptainMeritLabel" type="Label" parent="MarginContainer/ResourcePanel" unique_id=657378831]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Merit: 0 pts"
+horizontal_alignment = 1
+
+[node name="HSeparatorCO" type="HSeparator" parent="MarginContainer/ResourcePanel" unique_id=1883838759]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/ResourcePanel" unique_id=1764870993]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Resources"
+horizontal_alignment = 1
+
+[node name="FuelLabel" type="Label" parent="MarginContainer/ResourcePanel" unique_id=1086134290]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Fuel: 1000"
+horizontal_alignment = 1
+
+[node name="AmmoLabel" type="Label" parent="MarginContainer/ResourcePanel" unique_id=843770182]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Ammo: 500"
+horizontal_alignment = 1
+
+[node name="HSeparator1" type="HSeparator" parent="MarginContainer/ResourcePanel" unique_id=295169092]
+layout_mode = 2
+
+[node name="PilotsLabel" type="Label" parent="MarginContainer/ResourcePanel" unique_id=277213336]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Pilots: 8/8"
+horizontal_alignment = 1
+
+[node name="AircraftLabel" type="Label" parent="MarginContainer/ResourcePanel" unique_id=1389989462]
+unique_name_in_owner = true
+layout_mode = 2
+text = "4x BE.2c"
+horizontal_alignment = 1

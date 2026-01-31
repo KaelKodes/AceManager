@@ -19,6 +19,7 @@ namespace AceManager.Core
 
         // Physical aircraft inventory (replaces AvailableAircraft)
         public List<AircraftInstance> AircraftInventory { get; private set; } = new List<AircraftInstance>();
+        public string SelectedNation { get; private set; }
 
         public RosterManager Roster { get; private set; }
         public MissionData CurrentMission { get; private set; }
@@ -28,6 +29,8 @@ namespace AceManager.Core
         public CaptainData PlayerCaptain { get; private set; }
         public bool MissionCompletedToday { get; private set; } = false;
 
+        public UpgradeProject ActiveUpgrade { get; private set; }
+
         public override void _Ready()
         {
             Instance = this;
@@ -36,67 +39,104 @@ namespace AceManager.Core
             Roster = new RosterManager();
             AddChild(Roster);
 
-            LoadInitialData();
+            // Just load static library data, don't start session yet
+            AircraftLibrary = DataLoader.LoadAllAircraft();
         }
 
-        private void LoadInitialData()
+        public void StartCampaign(string nation)
         {
-            AircraftLibrary = DataLoader.LoadAllAircraft();
+            SelectedNation = nation;
+            GD.Print($"Starting new campaign for {nation}...");
+
+            // Set historical starting date
+            CurrentDate = nation switch
+            {
+                "Britain" => new DateTime(1914, 8, 13), // RFC deployment to France
+                "France" => new DateTime(1914, 8, 3),   // French entry into WWI
+                "Germany" => new DateTime(1914, 8, 1),  // Mobilization
+                "Italy" => new DateTime(1915, 5, 23),    // Italian entry (May 1915)
+                "USA" => new DateTime(1917, 4, 6),      // US Declaration of War
+                _ => new DateTime(1914, 8, 1)
+            };
+
+            InitializeSession();
+        }
+
+        private void InitializeSession()
+        {
             var bases = DataLoader.LoadAirbaseDatabase();
 
-            if (bases.Count > 0)
+            // Pick starting base by nation
+            CurrentBase = bases.FirstOrDefault(b => b.Nation == SelectedNation);
+
+            if (CurrentBase == null)
             {
-                CurrentBase = bases[0]; // Start at St-Omer by default
+                GD.PrintErr($"No base found for {SelectedNation}! Falling back to first available.");
+                CurrentBase = bases.FirstOrDefault();
+            }
+
+            if (CurrentBase != null)
+            {
+                // Set default basic starting stats
                 CurrentBase.CurrentFuel = 1000;
                 CurrentBase.CurrentAmmo = 500;
                 CurrentBase.CurrentSpareParts = 50;
-                CurrentBase.RunwayRating = 3;
-                CurrentBase.MaintenanceRating = 2;
-                CurrentBase.OperationsRating = 2;
-                CurrentBase.TrainingFacilitiesRating = 2;
+                CurrentBase.RunwayRating = 3; // Basic grass strip (Level 3)
+                CurrentBase.MaintenanceRating = 1;
+                CurrentBase.OperationsRating = 1;
+                CurrentBase.TrainingFacilitiesRating = 1;
+                CurrentBase.LodgingRating = 1; // Level I lodging (8 pilots)
             }
 
-            Roster.GenerateRoster(8);
-            AssignStarterAircraft();
+            int startingPilots = CurrentBase?.GetMaxPilotCapacity() ?? 8;
+            Roster.GenerateRoster(startingPilots);
+            AssignStarterAircraft(SelectedNation);
 
-            // Initialize sector map with home base
+            // Initialize sector map
             if (CurrentBase != null)
             {
-                SectorMap = MapData.CreateStOmerSector(CurrentBase);
+                SectorMap = MapData.GenerateHistoricalMap(CurrentBase);
             }
 
-            // Initialize player's commanding officer
             PlayerCaptain = new CaptainData();
+            EmitSignal(SignalName.DayAdvanced); // Trigger initial UI refresh
         }
 
-        private void AssignStarterAircraft()
+        private void AssignStarterAircraft(string nation)
         {
-            // Find a suitable British aircraft that:
-            // 1. Was available by the starting year
-            // 2. Can operate from our current runway
+            GD.Print($"Assigning starter aircraft for {nation}. Library size: {AircraftLibrary.Count}");
+
+            // Find a suitable basic aircraft for the nation
             var starterType = AircraftLibrary
-                .Where(a => a.Nation == "Britain"
+                .Where(a => a.Nation == nation
                     && a.YearIntroduced <= CurrentDate.Year
                     && a.RunwayRequirementRange <= CurrentBase.RunwayRating)
-                .OrderBy(a => a.CommandPriorityTier) // Lower tier = more common/cheaper
-                .ThenBy(a => a.YearIntroduced) // Older = more available
+                .OrderBy(a => a.CommandPriorityTier) // Pick common/basic types first
                 .FirstOrDefault();
 
             if (starterType == null)
             {
-                // Fallback: just get any British aircraft that fits the runway
+                // Fallback 1: Ignore year, respect runway
                 starterType = AircraftLibrary
-                    .Where(a => a.Nation == "Britain" && a.RunwayRequirementRange <= CurrentBase.RunwayRating)
+                    .Where(a => a.Nation == nation && a.RunwayRequirementRange <= CurrentBase.RunwayRating)
                     .FirstOrDefault();
 
                 if (starterType == null)
                 {
-                    GD.PrintErr("No suitable starter aircraft found for this runway!");
-                    return;
+                    // Fallback 2: Ignore everything, just get any plane for this nation (prevent lock)
+                    starterType = AircraftLibrary
+                        .Where(a => a.Nation == nation)
+                        .FirstOrDefault();
+
+                    if (starterType == null)
+                    {
+                        GD.PrintErr($"No starter aircraft found for {nation} even with overrides!");
+                        return;
+                    }
                 }
             }
 
-            // Give the player 6 of the same aircraft type
+            // Give the player 6 aircraft
             int starterCount = 6;
             for (int i = 0; i < starterCount; i++)
             {
@@ -104,7 +144,7 @@ namespace AceManager.Core
                 AircraftInventory.Add(instance);
             }
 
-            GD.Print($"Assigned {starterCount}x {starterType.Name} (Runway Req: {starterType.RunwayRequirementRange}) to squadron inventory.");
+            GD.Print($"Assigned {starterCount}x {starterType.Name} for starting {nation} squadron.");
         }
 
 
@@ -127,6 +167,21 @@ namespace AceManager.Core
                 aircraft.AdvanceRepair();
             }
 
+            // Process pilot recovery and fatigue
+            Roster.ProcessDailyRecovery();
+
+            // Process facility upgrades
+            if (ActiveUpgrade != null)
+            {
+                ActiveUpgrade.DaysRemaining--;
+                if (ActiveUpgrade.DaysRemaining <= 0)
+                {
+                    CurrentBase.SetRating(ActiveUpgrade.FacilityName, ActiveUpgrade.TargetLevel);
+                    GD.Print($"COMPLETE: {ActiveUpgrade.FacilityName} upgrade to Level {ActiveUpgrade.TargetLevel} finished!");
+                    ActiveUpgrade = null;
+                }
+            }
+
             MissionCompletedToday = false;
 
             EmitSignal(SignalName.DayAdvanced);
@@ -134,15 +189,33 @@ namespace AceManager.Core
             GD.Print($"Advanced to {CurrentDate.ToShortDateString()}");
         }
 
-        public MissionData CreateMission(MissionType type, int distance, RiskPosture risk)
+        public MissionData CreateMission(MissionType type, int distance, RiskPosture risk, Vector2? manualTarget = null, string targetName = "")
         {
-            CurrentMission = new MissionData
+            var mission = new MissionData
             {
                 Type = type,
                 TargetDistance = distance,
                 Risk = risk,
-                Status = MissionStatus.Planned
+                Status = MissionStatus.Planned,
+                TargetName = targetName
             };
+
+            var homeLoc = SectorMap?.Locations.FirstOrDefault(l => l.Id == "home_base");
+            Vector2 startPos = homeLoc?.WorldCoordinates ?? Vector2.Zero;
+
+            Vector2 targetPos = manualTarget ?? MapData.GenerateProceduralTarget(startPos, distance, SelectedNation);
+            mission.TargetLocation = targetPos;
+
+            // Use the shared waypoint generation logic
+            mission.Waypoints = MapData.GenerateWaypoints(startPos, targetPos, distance);
+
+            // Update TargetDistance based on actual distance if manual
+            if (manualTarget.HasValue)
+            {
+                mission.TargetDistance = (int)Math.Max(1, Math.Min(10, (targetPos - startPos).Length() / 10f));
+            }
+
+            CurrentMission = mission;
             return CurrentMission;
         }
 
@@ -189,6 +262,22 @@ namespace AceManager.Core
 
         private void ProcessMissionResults()
         {
+            // Discover target location if successful
+            var targetLoc = SectorMap?.Locations.FirstOrDefault(l =>
+                (l.Name == CurrentMission.TargetName && !string.IsNullOrEmpty(l.Name)) ||
+                (l.WorldCoordinates - CurrentMission.TargetLocation).Length() < 1.0f);
+
+            if (targetLoc != null && !targetLoc.IsDiscovered)
+            {
+                // We'll mark it discovered if the mission wasn't an absolute failure
+                if (CurrentMission.ResultBand >= MissionResultBand.Stalemate)
+                {
+                    targetLoc.IsDiscovered = true;
+                    targetLoc.DiscoveredDate = CurrentDate;
+                    GD.Print($"INTEL: Location {targetLoc.Name} permanently mapped after mission.");
+                }
+            }
+
             foreach (var assignment in CurrentMission.Assignments)
             {
                 // Return aircraft to ready (or damaged) status
@@ -210,6 +299,82 @@ namespace AceManager.Core
                 ProcessCrewCasualties(assignment.Gunner);
                 ProcessCrewCasualties(assignment.Observer);
             }
+        }
+
+        public void ScrapAircraft(AircraftInstance aircraft)
+        {
+            if (aircraft == null) return;
+
+            // Calculate parts reward: base value (20) + 30% of remaining condition
+            int reward = 20 + (int)(aircraft.Condition * 0.3f);
+
+            if (CurrentBase != null)
+            {
+                CurrentBase.CurrentSpareParts += reward;
+                GD.Print($"Scrapped {aircraft.GetDisplayName()} for {reward} spare parts.");
+            }
+
+            AircraftInventory.Remove(aircraft);
+            EmitSignal(SignalName.DayAdvanced); // Force UI refresh
+        }
+
+        public void StartUpgrade(string facilityName)
+        {
+            if (ActiveUpgrade != null)
+            {
+                GD.Print("Already have an active upgrade project.");
+                return;
+            }
+
+            int currentLevel = CurrentBase.GetRating(facilityName);
+            if (currentLevel >= 5)
+            {
+                GD.Print("Facility already at maximum level.");
+                return;
+            }
+
+            var upgrade = UpgradeProject.Create(facilityName, currentLevel + 1);
+
+            if (PlayerCaptain.Merit < upgrade.MeritCost)
+            {
+                GD.Print("Insufficient Merit to start upgrade.");
+                return;
+            }
+
+            PlayerCaptain.Merit -= upgrade.MeritCost;
+            ActiveUpgrade = upgrade;
+            GD.Print($"Started upgrade for {facilityName} to Level {upgrade.TargetLevel}. Cost: {upgrade.MeritCost} Merit.");
+            EmitSignal(SignalName.DayAdvanced);
+        }
+
+        public void RepairAircraft(AircraftInstance aircraft)
+        {
+            if (aircraft == null) return;
+            if (aircraft.Condition >= 100) return;
+
+            aircraft.StartRepair();
+            EmitSignal(SignalName.DayAdvanced);
+        }
+
+        public void ConductTraining(List<CrewData> trainees, CrewData instructor)
+        {
+            if (trainees == null || trainees.Count == 0 || instructor == null) return;
+
+            GD.Print($"Conducting training session with {instructor.Name} and {trainees.Count} trainees.");
+
+            foreach (var pilot in trainees)
+            {
+                // Small boost to core stats
+                pilot.AddImprovement("OA", 2.0f);
+                pilot.AddImprovement("CTL", 1.5f);
+                pilot.ApplyDailyImprovements();
+            }
+
+            // Instructor gets fatigued
+            instructor.Fatigue = Math.Min(100, instructor.Fatigue + 15);
+
+            MissionCompletedToday = true; // Training counts as today's "mission"
+            EmitSignal(SignalName.MissionCompleted); // Refresh UI buttons
         }
 
         private void ProcessCrewCasualties(CrewData crew)

@@ -26,6 +26,17 @@ namespace AceManager.UI
 		private FlightAssignment _flightLeader = null;
 		private bool _isReady = false;
 
+		// Map elements
+		private Control _flightMapArea;
+		private Control _mapMarkerContainer;
+		private Line2D _departureLine;
+		private Line2D _returnLine;
+		private Label _targetLabel;
+		private Vector2? _manualTargetPos = null;
+		private string _manualTargetName = "";
+		private float _briefingMapScale = 6f; // KM to Pixels
+		private Vector2 _mapCenter;
+
 		private enum SelectionMode
 		{
 			PickAircraft,
@@ -37,6 +48,7 @@ namespace AceManager.UI
 		private FlightAssignment _tempAssignment = null;
 
 		[Signal] public delegate void PanelClosedEventHandler();
+		[Signal] public delegate void MissionSettingsChangedEventHandler(Godot.Collections.Array<Vector2> waypoints);
 
 		public override void _Ready()
 		{
@@ -51,11 +63,34 @@ namespace AceManager.UI
 			_flightLeaderLabel = GetNode<Label>("%FlightLeaderLabel");
 			_cancelButton = GetNode<Button>("%CancelButton");
 			_launchButton = GetNode<Button>("%LaunchButton");
+			_flightMapArea = GetNode<Control>("%FlightMapArea");
 
+			SetupMapNodes();
 			SetupOptions();
 			ConnectSignals();
+			_pilotList.TooltipText = "Double-click to view Pilot Details";
+			_aircraftList.TooltipText = "Double-click to view Aircraft Details";
 			_isReady = true;
 			RefreshData();
+		}
+
+		private void SetupMapNodes()
+		{
+			_mapMarkerContainer = new Control { Name = "Markers" };
+			_flightMapArea.AddChild(_mapMarkerContainer);
+
+			_departureLine = new Line2D { Width = 3, DefaultColor = new Color(0.2f, 1.0f, 0.2f, 0.7f) }; // Green
+			_flightMapArea.AddChild(_departureLine);
+
+			_returnLine = new Line2D { Width = 3, DefaultColor = new Color(1.0f, 0.2f, 0.2f, 0.7f) }; // Red
+			_flightMapArea.AddChild(_returnLine);
+
+			_targetLabel = new Label { Text = "TARGET", HorizontalAlignment = HorizontalAlignment.Center };
+			_targetLabel.AddThemeFontSizeOverride("font_size", 10);
+			_flightMapArea.AddChild(_targetLabel);
+
+			_flightMapArea.GuiInput += OnMapInput;
+			_flightMapArea.Resized += () => CallDeferred(nameof(UpdateMapPreview));
 		}
 
 		private void SetupOptions()
@@ -88,6 +123,8 @@ namespace AceManager.UI
 			_availablePilots = gm.Roster.GetAvailablePilots();
 			_pendingAssignments.Clear();
 			_flightLeader = null;
+			_manualTargetPos = null;
+			_manualTargetName = "";
 
 			// Reset selection flow
 			_currentMode = SelectionMode.PickAircraft;
@@ -96,6 +133,7 @@ namespace AceManager.UI
 			GD.Print($"MissionPlanningPanel: Found {_availableAircraft.Count} aircraft, {_availablePilots.Count} pilots");
 
 			RefreshLists();
+			UpdateMapPreview();
 		}
 
 		public override void _Notification(int what)
@@ -124,10 +162,45 @@ namespace AceManager.UI
 			{
 				if (assignedPilots.Contains(pilot) || assignedGunners.Contains(pilot)) continue;
 
-				string info = $"{pilot.Name} (DF: {pilot.GetDogfightRating():F0})";
+				string stats = GetPilotListStats(pilot);
+				string info = $"{pilot.Name} {stats}";
 				_pilotList.AddItem(info);
 				_pilotList.SetItemMetadata(_pilotList.ItemCount - 1, pilot.Name);
 			}
+		}
+
+		private string GetPilotListStats(CrewData pilot)
+		{
+			var type = (MissionType)_typeOption.Selected;
+
+			if (_currentMode == SelectionMode.PickPilot)
+			{
+				return type switch
+				{
+					MissionType.Patrol or MissionType.Interception or MissionType.Escort =>
+						$"(GUN:{pilot.GUN} CTL:{pilot.CTL} OA:{pilot.OA})",
+					MissionType.Reconnaissance =>
+						$"(CTL:{pilot.CTL} DA:{pilot.DA} STA:{pilot.STA})",
+					MissionType.Bombing or MissionType.Strafing =>
+						$"(GUN:{pilot.GUN} CTL:{pilot.CTL} DIS:{pilot.DIS})",
+					_ => $"(DF:{pilot.GetDogfightRating():F0})"
+				};
+			}
+			else if (_currentMode == SelectionMode.PickObserver)
+			{
+				return type switch
+				{
+					MissionType.Patrol or MissionType.Interception or MissionType.Escort =>
+						$"(GUN:{pilot.GUN} DA:{pilot.DA} RFX:{pilot.RFX})",
+					MissionType.Reconnaissance =>
+						$"(OA:{pilot.OA} TA:{pilot.TA} DIS:{pilot.DIS})",
+					MissionType.Bombing or MissionType.Strafing =>
+						$"(OA:{pilot.OA} DIS:{pilot.DIS} TA:{pilot.TA})",
+					_ => $"(GUN:{pilot.GUN})"
+				};
+			}
+
+			return "";
 		}
 
 		private void PopulateAircraftList()
@@ -139,9 +212,11 @@ namespace AceManager.UI
 			// Get aircraft already assigned
 			var assignedAircraft = _pendingAssignments.Select(a => a.Aircraft).ToHashSet();
 
+			bool isGrounded = GameManager.Instance.TodaysBriefing?.IsFlightGrounded() ?? false;
 			foreach (var aircraft in _availableAircraft)
 			{
 				if (assignedAircraft.Contains(aircraft)) continue;
+				if (isGrounded) continue; // Don't show aircraft if training
 
 				string seats = aircraft.GetCrewSeats() >= 2 ? " [2-Seater]" : "";
 				string condition = $"{aircraft.Condition}%";
@@ -157,14 +232,19 @@ namespace AceManager.UI
 			{
 				_distanceValue.Text = ((int)value).ToString();
 				UpdateCostPreview();
+				_manualTargetPos = null; // Reset manual target if distance changes via slider
+				UpdateMapPreview();
 			};
-			_typeOption.ItemSelected += (index) => UpdateCostPreview();
+			_typeOption.ItemSelected += (index) =>
+			{
+				RefreshLists();
+				UpdateMapPreview();
+			};
 			_pilotList.ItemSelected += OnPilotSelected;
 			_aircraftList.ItemSelected += OnAircraftSelected;
 
-			// Use the same lists but filter/disable based on mode
-			_pilotList.ItemActivated += (idx) => OnPilotSelected(idx);
-			_aircraftList.ItemActivated += (idx) => OnAircraftSelected(idx);
+			_pilotList.ItemActivated += OnPilotDoubleClicked;
+			_aircraftList.ItemActivated += OnAircraftDoubleClicked;
 
 			_cancelButton.Pressed += OnCancelPressed;
 			_launchButton.Pressed += OnLaunchPressed;
@@ -304,11 +384,16 @@ namespace AceManager.UI
 
 		private void UpdateModeInstructions()
 		{
+			bool isGrounded = GameManager.Instance.TodaysBriefing?.IsFlightGrounded() ?? false;
 			if (_currentMode == SelectionMode.PickAircraft)
 			{
-				SetListEnabled(_pilotList, false);
-				SetListEnabled(_aircraftList, true);
-				_flightLeaderLabel.Text = _pendingAssignments.Count == 0 ? "Select an Aircraft to start your flight" : "Select another Aircraft or Launch";
+				SetListEnabled(_pilotList, isGrounded);
+				SetListEnabled(_aircraftList, !isGrounded);
+
+				if (isGrounded)
+					_flightLeaderLabel.Text = _pendingAssignments.Count == 0 ? "Select an Instructor to start training" : "Select Trainees or Start Training";
+				else
+					_flightLeaderLabel.Text = _pendingAssignments.Count == 0 ? "Select an Aircraft to start your flight" : "Select another Aircraft or Launch";
 			}
 			else if (_currentMode == SelectionMode.PickPilot)
 			{
@@ -353,9 +438,13 @@ namespace AceManager.UI
 				bool isLeader = assignment == _flightLeader;
 				string leaderMark = isLeader ? "★ " : "   ";
 
+				string crewInfo = assignment.Pilot.Name;
+				if (assignment.Gunner != null) crewInfo += $" + {assignment.Gunner.Name}";
+				else if (assignment.Observer != null) crewInfo += $" + {assignment.Observer.Name}";
+
 				var button = new Button
 				{
-					Text = $"{leaderMark}{assignment.Pilot.Name} → {assignment.Aircraft.Definition.Name}",
+					Text = $"{leaderMark}{crewInfo} → {assignment.Aircraft.Definition.Name}",
 					SizeFlagsHorizontal = SizeFlags.ExpandFill,
 					TooltipText = isLeader ? "Flight Leader! Click another to change." : "Click to set as Flight Leader"
 				};
@@ -377,14 +466,17 @@ namespace AceManager.UI
 			}
 
 			// Update flight leader label
+			bool isGrounded = GameManager.Instance.TodaysBriefing?.IsFlightGrounded() ?? false;
 			if (_flightLeader != null)
 			{
-				_flightLeaderLabel.Text = $"Flight Leader: {_flightLeader.Pilot.Name}";
+				_flightLeaderLabel.Text = (isGrounded ? "Instructor: " : "Flight Leader: ") + _flightLeader.Pilot.Name;
 			}
 			else
 			{
-				_flightLeaderLabel.Text = "Flight Leader: (select an assignment)";
+				_flightLeaderLabel.Text = isGrounded ? "Instructor: (select an assignment)" : "Flight Leader: (select an assignment)";
 			}
+
+			_launchButton.Text = isGrounded ? "CONDUCT TRAINING" : "LAUNCH MISSION";
 		}
 
 		private void OnAssignmentClicked(int index)
@@ -475,29 +567,163 @@ namespace AceManager.UI
 
 			var gm = GameManager.Instance;
 
-			var missionType = (MissionType)_typeOption.Selected;
-			int distance = (int)_distanceSlider.Value;
-			var risk = (RiskPosture)_riskOption.Selected;
-
-			gm.CreateMission(missionType, distance, risk);
-
-			foreach (var assignment in _pendingAssignments)
+			bool isGrounded = gm.TodaysBriefing?.IsFlightGrounded() ?? false;
+			if (isGrounded)
 			{
-				gm.AddFlightAssignment(assignment);
+				// Training flow
+				var instructor = _flightLeader.Pilot;
+				var trainees = _pendingAssignments.Where(a => a != _flightLeader).Select(a => a.Pilot).ToList();
+				gm.ConductTraining(trainees, instructor);
 			}
-
-			// TODO: Pass flight leader info to mission
-			if (_flightLeader != null)
+			else
 			{
-				GD.Print($"Mission launched with Flight Leader: {_flightLeader.Pilot.Name}");
-			}
+				var missionType = (MissionType)_typeOption.Selected;
+				int distance = (int)_distanceSlider.Value;
+				var risk = (RiskPosture)_riskOption.Selected;
 
-			gm.LaunchMission();
+				gm.CreateMission(missionType, distance, risk, _manualTargetPos, _manualTargetName);
+
+				foreach (var assignment in _pendingAssignments)
+				{
+					gm.AddFlightAssignment(assignment);
+				}
+
+				if (_flightLeader != null)
+				{
+					GD.Print($"Mission launched with Flight Leader: {_flightLeader.Pilot.Name}");
+				}
+
+				gm.LaunchMission();
+			}
 
 			_pendingAssignments.Clear();
 			_flightLeader = null;
 			EmitSignal(SignalName.PanelClosed);
 			Hide();
+		}
+
+		private void OnMapInput(InputEvent @event)
+		{
+			if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
+			{
+				Vector2 mapPos = mb.Position;
+				Vector2 homeWorldPos = GetHomeWorldPos();
+				Vector2 center = _flightMapArea.Size / 2;
+
+				// Map to World: world = origin + (screen - center) / scale
+				Vector2 worldPos = homeWorldPos + (mapPos - center) / _briefingMapScale;
+
+				_manualTargetPos = worldPos;
+				_manualTargetName = "Manual Target";
+
+				// Update slider to match distance
+				int dist = (int)Math.Max(1, Math.Min(10, (worldPos - homeWorldPos).Length() / 10f));
+				_distanceSlider.Value = dist;
+				_distanceValue.Text = dist.ToString();
+
+				UpdateMapPreview();
+			}
+		}
+
+		private void UpdateMapPreview()
+		{
+			if (!_isReady || _flightMapArea == null) return;
+
+			Vector2 areaSize = _flightMapArea.Size;
+			if (areaSize.X < 10) return;
+			Vector2 center = areaSize / 2;
+
+			Vector2 homeWorldPos = GetHomeWorldPos();
+			Vector2 targetPos = _manualTargetPos ?? MapData.GenerateProceduralTarget(homeWorldPos, (int)_distanceSlider.Value, GameManager.Instance.SelectedNation);
+
+			var waypoints = MapData.GenerateWaypoints(homeWorldPos, targetPos, (int)_distanceSlider.Value);
+
+			_departureLine.ClearPoints();
+			_returnLine.ClearPoints();
+
+			// Departure: Start to segment before last
+			for (int i = 0; i < waypoints.Count - 1; i++)
+			{
+				_departureLine.AddPoint(center + (waypoints[i] - homeWorldPos) * _briefingMapScale);
+			}
+
+			// Return: Last segment back to home
+			if (waypoints.Count >= 2)
+			{
+				_returnLine.AddPoint(center + (waypoints[waypoints.Count - 2] - homeWorldPos) * _briefingMapScale);
+				_returnLine.AddPoint(center + (waypoints[waypoints.Count - 1] - homeWorldPos) * _briefingMapScale);
+			}
+
+			UpdateMapMarkers(homeWorldPos, targetPos, center);
+
+			// Notify central map
+			var godotWaypoints = new Godot.Collections.Array<Vector2>();
+			foreach (var wp in waypoints) godotWaypoints.Add(wp);
+			EmitSignal(SignalName.MissionSettingsChanged, godotWaypoints);
+		}
+
+		private void UpdateMapMarkers(Vector2 homeWorldPos, Vector2 targetPos, Vector2 center)
+		{
+			foreach (Node child in _mapMarkerContainer.GetChildren()) child.QueueFree();
+
+			var homeMarker = CreateMapMarker("HOME", Colors.Green);
+			homeMarker.Position = center;
+			_mapMarkerContainer.AddChild(homeMarker);
+
+			var targetMarker = CreateMapMarker("TARGET", Colors.Red);
+			targetMarker.Position = center + (targetPos - homeWorldPos) * _briefingMapScale;
+			_mapMarkerContainer.AddChild(targetMarker);
+
+			_targetLabel.Text = _manualTargetName != "" ? _manualTargetName : "PRIMARY OBJECTIVE";
+			_targetLabel.Position = targetMarker.Position + new Vector2(-50, 10);
+			_targetLabel.Size = new Vector2(100, 20);
+
+			if (GameManager.Instance.SectorMap != null)
+			{
+				foreach (var loc in GameManager.Instance.SectorMap.GetDiscoveredLocations())
+				{
+					if (loc.Id == "home_base") continue;
+
+					Vector2 screenPos = center + (loc.WorldCoordinates - homeWorldPos) * _briefingMapScale;
+					if (screenPos.X > 0 && screenPos.X < _flightMapArea.Size.X && screenPos.Y > 0 && screenPos.Y < _flightMapArea.Size.Y)
+					{
+						var marker = CreateMapMarker(loc.Name, Colors.LightBlue, 6);
+						marker.Position = screenPos;
+						_mapMarkerContainer.AddChild(marker);
+					}
+				}
+			}
+		}
+
+		private Control CreateMapMarker(string labelText, Color color, int size = 10)
+		{
+			var marker = new Control();
+			var dot = new ColorRect
+			{
+				Size = new Vector2(size, size),
+				Position = new Vector2(-size / 2, -size / 2),
+				Color = color
+			};
+			marker.AddChild(dot);
+
+			if (!string.IsNullOrEmpty(labelText))
+			{
+				var lbl = new Label
+				{
+					Text = labelText,
+					Position = new Vector2(size, -size),
+					Size = new Vector2(100, 20)
+				};
+				lbl.AddThemeFontSizeOverride("font_size", 8);
+				marker.AddChild(lbl);
+			}
+			return marker;
+		}
+
+		private Vector2 GetHomeWorldPos()
+		{
+			var homeLoc = GameManager.Instance.SectorMap?.Locations.FirstOrDefault(l => l.Id == "home_base");
+			return homeLoc?.WorldCoordinates ?? Vector2.Zero;
 		}
 	}
 }

@@ -76,8 +76,8 @@ namespace AceManager.Core
 
         public List<CrewData> GetAvailablePilots()
         {
-            // For now, return all pilots. Later, filter by fatigue/wounds.
-            return Roster.ToList();
+            // Only Active pilots who aren't too fatigued (optional threshold) can fly
+            return Roster.Where(p => p.Status == PilotStatus.Active && p.Fatigue < 95).ToList();
         }
 
         public CrewData GetPilotByName(string name)
@@ -93,12 +93,50 @@ namespace AceManager.Core
 
         public void WoundPilot(CrewData pilot, int recoveryDays)
         {
+            pilot.Status = PilotStatus.Wounded;
+            pilot.RecoveryDays = recoveryDays;
             GD.Print($"{pilot.Name} was wounded! Recovery: {recoveryDays} days.");
+        }
+
+        public void HospitalizePilot(CrewData pilot, int recoveryDays)
+        {
+            pilot.Status = PilotStatus.Hospitalized;
+            pilot.RecoveryDays = recoveryDays;
+            GD.Print($"{pilot.Name} had a psychological breakdown! Hospitalized for {recoveryDays} days.");
+        }
+
+        public void ProcessDailyRecovery()
+        {
+            foreach (var pilot in Roster)
+            {
+                if (pilot.Status == PilotStatus.KIA) continue;
+
+                // Daily fatigue recovery
+                pilot.Fatigue = Math.Max(0, pilot.Fatigue - 10);
+
+                // Wound/Hospital recovery
+                if (pilot.RecoveryDays > 0)
+                {
+                    pilot.RecoveryDays--;
+                    if (pilot.RecoveryDays <= 0)
+                    {
+                        if (pilot.Status == PilotStatus.Hospitalized)
+                        {
+                            // Clear 1 negative trait on recovery if you want, or just set to active
+                            if (pilot.NegativeTraits.Count > 0) pilot.NegativeTraits.RemoveAt(0);
+                        }
+                        pilot.Status = PilotStatus.Active;
+                        GD.Print($"{pilot.Name} has returned to active duty.");
+                    }
+                }
+            }
         }
 
         public void KillPilot(CrewData pilot)
         {
-            Roster.Remove(pilot);
+            pilot.Status = PilotStatus.KIA;
+            // We keep them in the roster for history/log purposes, 
+            // but they won't show up in 'Available' lists.
             GD.Print($"{pilot.Name} was killed in action.");
         }
     }

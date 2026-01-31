@@ -161,7 +161,7 @@ namespace AceManager.Core
             while (!file.EofReached())
             {
                 string line = file.GetLine().Trim();
-                if (string.IsNullOrEmpty(line) || line.StartsWith("=") || line.StartsWith("Coordinate")) continue;
+                if (string.IsNullOrEmpty(line) || line.StartsWith("=") || line.Contains("Coordinate Format")) continue;
 
                 if (char.IsDigit(line[0]) && line.Contains(")"))
                 {
@@ -178,9 +178,27 @@ namespace AceManager.Core
                         var coords = line.Replace("Coordinates:", "").Trim().Split(',');
                         if (coords.Length == 2)
                         {
-                            float lat = float.Parse(coords[0].Replace("N", "").Replace("S", "").Trim());
-                            float lon = float.Parse(coords[1].Replace("E", "").Replace("W", "").Trim());
-                            currentBase.Coordinates = new Vector2(lon, lat); // X=Lon, Y=Lat
+                            try
+                            {
+                                // Handle latitude (N/S)
+                                string latStr = coords[0].Replace("N", "").Replace("S", "").Trim();
+                                // Handle longitude (E/W)
+                                string lonStr = coords[1].Replace("E", "").Replace("W", "").Trim();
+
+                                if (float.TryParse(latStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float lat) &&
+                                    float.TryParse(lonStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float lon))
+                                {
+                                    currentBase.Coordinates = new Vector2(lon, lat); // X=Lon, Y=Lat
+                                }
+                                else
+                                {
+                                    GD.PrintErr($"Failed to parse float from coordinates: {line}");
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                GD.PrintErr($"Error parsing coordinates in airbase database: {line}. Error: {e.Message}");
+                            }
                         }
                     }
                     else if (line.StartsWith("Active:")) currentBase.ActiveYears = line.Replace("Active:", "").Trim();

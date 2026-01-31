@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using AceManager.Core;
 
 namespace AceManager.UI
 {
@@ -8,20 +9,83 @@ namespace AceManager.UI
         private Label _titleLabel;
         private RichTextLabel _contentLabel;
         private Button _closeButton;
+        private Button _upgradeButton;
+        private Label _costLabel;
+
+        private string _currentFacility;
 
         public override void _Ready()
         {
             _titleLabel = GetNode<Label>("%TitleLabel");
             _contentLabel = GetNode<RichTextLabel>("%ContentLabel");
             _closeButton = GetNode<Button>("%CloseButton");
+            _upgradeButton = GetNode<Button>("%UpgradeButton");
+            _costLabel = GetNode<Label>("%CostLabel");
 
             _closeButton.Pressed += QueueFree;
+            _upgradeButton.Pressed += OnUpgradePressed;
         }
 
         public void ShowInfo(string title, string content)
         {
             _titleLabel.Text = title;
             _contentLabel.Text = content;
+            _upgradeButton.Hide();
+            _costLabel.Hide();
+        }
+
+        public void ShowFacility(string name, int level, string description)
+        {
+            _currentFacility = name;
+            _titleLabel.Text = $"{name} Facility (Level {ToRoman(level)})";
+            _contentLabel.Text = description;
+
+            if (level < 5)
+            {
+                int cost = UpgradeProject.CalculateCost(level + 1);
+                int duration = (level + 1) * 2;
+
+                _costLabel.Text = $"Cost: {cost} Merit | Est: {duration} days";
+                _costLabel.Show();
+                _upgradeButton.Show();
+
+                var active = GameManager.Instance.ActiveUpgrade;
+                if (active != null)
+                {
+                    _upgradeButton.Disabled = true;
+                    _upgradeButton.Text = active.FacilityName == name ? "Upgrading..." : "Project Active";
+                }
+                else
+                {
+                    _upgradeButton.Disabled = GameManager.Instance.PlayerCaptain.Merit < cost;
+                    _upgradeButton.Text = "Start Upgrade";
+                }
+            }
+            else
+            {
+                _costLabel.Hide();
+                _upgradeButton.Hide();
+            }
+        }
+
+        private void OnUpgradePressed()
+        {
+            if (string.IsNullOrEmpty(_currentFacility)) return;
+            GameManager.Instance.StartUpgrade(_currentFacility);
+            QueueFree();
+        }
+
+        private string ToRoman(int number)
+        {
+            return number switch
+            {
+                1 => "I",
+                2 => "II",
+                3 => "III",
+                4 => "IV",
+                5 => "V",
+                _ => number.ToString()
+            };
         }
     }
 }

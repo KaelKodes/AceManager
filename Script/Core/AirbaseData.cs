@@ -32,5 +32,52 @@ namespace AceManager.Core
         [Export] public float CurrentFuel { get; set; }
         [Export] public float CurrentAmmo { get; set; }
         [Export] public int CurrentSpareParts { get; set; }
+
+        public int GetMaxPilotCapacity()
+        {
+            // Level 1 = 8 pilots, Level 2 = 16, etc.
+            return LodgingRating * 8;
+        }
+
+        public int GetMaxAircraftCapacity()
+        {
+            // Derived from Maintenance, Fuel, Ammo, and Training
+            // Average of these four ratings * 6 (starter count)
+            float avg = (MaintenanceRating + FuelStorageRating + AmmunitionStorageRating + TrainingFacilitiesRating) / 4.0f;
+            return (int)Math.Max(4, Math.Floor(avg * 6));
+        }
+
+        public int GetRating(string facilityName)
+        {
+            return facilityName switch
+            {
+                "Runway" => RunwayRating,
+                "Lodging" => LodgingRating,
+                "Maintenance" => MaintenanceRating,
+                "Fuel Storage" => FuelStorageRating,
+                "Ammo Storage" => AmmunitionStorageRating,
+                "Operations" => OperationsRating,
+                "Medical" => MedicalRating,
+                "Transport" => TransportAccessRating,
+                "Training" => TrainingFacilitiesRating,
+                _ => 0
+            };
+        }
+
+        public void SetRating(string facilityName, int rating)
+        {
+            switch (facilityName)
+            {
+                case "Runway": RunwayRating = rating; break;
+                case "Lodging": LodgingRating = rating; break;
+                case "Maintenance": MaintenanceRating = rating; break;
+                case "Fuel Storage": FuelStorageRating = rating; break;
+                case "Ammo Storage": AmmunitionStorageRating = rating; break;
+                case "Operations": OperationsRating = rating; break;
+                case "Medical": MedicalRating = rating; break;
+                case "Transport": TransportAccessRating = rating; break;
+                case "Training": TrainingFacilitiesRating = rating; break;
+            }
+        }
     }
 }

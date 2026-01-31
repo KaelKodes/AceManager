@@ -5,164 +5,331 @@ using System.Linq;
 
 namespace AceManager.Core
 {
-	/// <summary>
-	/// Represents a point of interest on the command map.
-	/// Can be bases, targets, enemy positions, etc.
-	/// </summary>
-	public class MapLocation
-	{
-		public string Id { get; set; }
-		public string Name { get; set; }
-		public Vector2 Coordinates { get; set; }
-		public LocationType Type { get; set; }
-		public string Nation { get; set; }
-		public bool IsDiscovered { get; set; }
-		public DateTime DiscoveredDate { get; set; }
-		public string Notes { get; set; }
+    /// <summary>
+    /// Represents a point of interest on the command map.
+    /// Can be bases, targets, enemy positions, etc.
+    /// </summary>
+    public class MapLocation
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public Vector2 WorldCoordinates { get; set; } // Global KM relative to (0 Lat, 0 Lon)
+        public Vector2 LocalCoordinates { get; set; } // Relative to sector center/home base (for legacy UI compat if needed)
+        public LocationType Type { get; set; }
+        public string Nation { get; set; }
+        public bool IsDiscovered { get; set; }
+        public DateTime DiscoveredDate { get; set; }
+        public string Notes { get; set; }
 
-		public enum LocationType
-		{
-			HomeBase,
-			AlliedBase,
-			SupplyDepot,
-			Hospital,
-			EnemyAirfield,
-			EnemyPosition,
-			FrontLine,
-			Town,
-			Bridge,
-			RailYard,
-			Factory,
-			Unknown
-		}
-	}
+        public enum LocationType
+        {
+            HomeBase,
+            AlliedBase,
+            SupplyDepot,
+            Hospital,
+            EnemyAirfield,
+            EnemyPosition,
+            FrontLine,
+            Town,
+            Bridge,
+            RailYard,
+            Factory,
+            Unknown
+        }
+    }
 
-	/// <summary>
-	/// Holds all map data for the player's current base sector.
-	/// Persistent data that survives between sessions.
-	/// </summary>
-	public partial class MapData : Resource
-	{
-		// Known locations - discovered through missions and intel
-		public List<MapLocation> Locations { get; set; } = new List<MapLocation>();
+    /// <summary>
+    /// Holds all map data for the player's current base sector.
+    /// Persistent data that survives between sessions.
+    /// </summary>
+    public partial class MapData : Resource
+    {
+        // Known locations - discovered through missions and intel
+        public List<MapLocation> Locations { get; set; } = new List<MapLocation>();
 
-		// Front line segments as coordinate pairs
-		[Export] public Vector2[] FrontLinePoints { get; set; }
+        // Front line segments as coordinate pairs
+        [Export] public Vector2[] FrontLinePoints { get; set; }
 
-		// Sector bounds
-		[Export] public Vector2 SectorMin { get; set; }
-		[Export] public Vector2 SectorMax { get; set; }
-		[Export] public string SectorName { get; set; }
+        // Sector bounds
+        [Export] public Vector2 SectorMin { get; set; }
+        [Export] public Vector2 SectorMax { get; set; }
+        [Export] public string SectorName { get; set; }
 
-		public void AddDiscoveredLocation(MapLocation location)
-		{
-			var existing = Locations.FirstOrDefault(l => l.Id == location.Id);
-			if (existing == null)
-			{
-				location.IsDiscovered = true;
-				Locations.Add(location);
-			}
-		}
+        public Vector2 GetWorldCoordinates(Vector2 latLon)
+        {
+            // 1 degree Latitude = ~111km
+            // 1 degree Longitude at 50°N = ~71km
+            float lonScale = 71f;
+            float latScale = 111f;
 
-		public List<MapLocation> GetDiscoveredLocations()
-		{
-			return Locations.Where(l => l.IsDiscovered).ToList();
-		}
+            float x = latLon.X * lonScale;
+            float y = -latLon.Y * latScale; // Lat increases North, Godot Y increases South
 
-		public List<MapLocation> GetLocationsByType(MapLocation.LocationType type)
-		{
-			return Locations.Where(l => l.IsDiscovered && l.Type == type).ToList();
-		}
+            return new Vector2(x, y);
+        }
 
-		/// <summary>
-		/// Initialize a basic map for the St-Omer sector (starting area)
-		/// </summary>
-		public static MapData CreateStOmerSector(AirbaseData homeBase)
-		{
-			var map = new MapData
-			{
-				SectorName = "St-Omer Sector",
-				SectorMin = new Vector2(-50, -50),  // Relative km from base
-				SectorMax = new Vector2(50, 50),
-				FrontLinePoints = new Vector2[]
-				{
-					new Vector2(50, -50),  // Front line runs roughly NE-SW
-					new Vector2(40, -20),
-					new Vector2(35, 0),
-					new Vector2(30, 25),
-					new Vector2(25, 50)
-				}
-			};
+        public List<MapLocation> GetDiscoveredLocations()
+        {
+            return Locations.Where(l => l.IsDiscovered).ToList();
+        }
 
-			// Add home base (always known)
-			map.Locations.Add(new MapLocation
-			{
-				Id = "home_base",
-				Name = homeBase.Name,
-				Coordinates = Vector2.Zero,  // Home base is center of map
-				Type = MapLocation.LocationType.HomeBase,
-				Nation = "Britain",
-				IsDiscovered = true,
-				Notes = "Home airfield - RFC operational base"
-			});
+        /// <summary>
+        /// Generates a historical map centered on the current airbase.
+        /// Loads other airbases from the database.
+        /// </summary>
+        public static MapData GenerateHistoricalMap(AirbaseData homeBase)
+        {
+            var map = new MapData
+            {
+                SectorName = $"{homeBase.Name} Sector",
+                SectorMin = new Vector2(-100, -100),
+                SectorMax = new Vector2(100, 100)
+            };
 
-			// Add some initially known allied locations
-			map.Locations.Add(new MapLocation
-			{
-				Id = "supply_depot_1",
-				Name = "Hazebrouck Supply Depot",
-				Coordinates = new Vector2(-15, -8),
-				Type = MapLocation.LocationType.SupplyDepot,
-				Nation = "Britain",
-				IsDiscovered = true,
-				Notes = "Main supply depot for the sector"
-			});
+            Vector2 homeCoords = homeBase.Coordinates;
+            // Emergency Fallback: If parsing failed and we are at 0,0, default to St. Omer (approximate RFC HQ)
+            if (homeCoords.Length() < 0.01f)
+            {
+                GD.PrintErr($"WARNING: Home base {homeBase.Name} has invalid coordinates (0,0). Using RFC HQ St. Omer fallback.");
+                homeCoords = new Vector2(2.2610f, 50.7510f); // Lon, Lat
+            }
 
-			map.Locations.Add(new MapLocation
-			{
-				Id = "hospital_1",
-				Name = "Bailleul Field Hospital",
-				Coordinates = new Vector2(-10, 12),
-				Type = MapLocation.LocationType.Hospital,
-				Nation = "Britain",
-				IsDiscovered = true,
-				Notes = "Casualty treatment facility"
-			});
+            Vector2 homeWorldPos = map.GetWorldCoordinates(homeCoords);
+            int currentYear = GameManager.Instance.CurrentDate.Year;
 
-			// Undiscovered enemy positions (will be revealed through recon)
-			map.Locations.Add(new MapLocation
-			{
-				Id = "enemy_airfield_1",
-				Name = "Lille-Lesquin Aerodrome",
-				Coordinates = new Vector2(30, 5),
-				Type = MapLocation.LocationType.EnemyAirfield,
-				Nation = "Germany",
-				IsDiscovered = false,
-				Notes = "German Jasta operating base"
-			});
+            // 1. Add Home Base
+            map.Locations.Add(new MapLocation
+            {
+                Id = "home_base",
+                Name = homeBase.Name,
+                WorldCoordinates = homeWorldPos,
+                Type = MapLocation.LocationType.HomeBase,
+                Nation = homeBase.Nation,
+                IsDiscovered = true,
+                Notes = "Primary operational base."
+            });
 
-			map.Locations.Add(new MapLocation
-			{
-				Id = "enemy_position_1",
-				Name = "German Artillery Battery",
-				Coordinates = new Vector2(32, -15),
-				Type = MapLocation.LocationType.EnemyPosition,
-				Nation = "Germany",
-				IsDiscovered = false
-			});
+            // 2. Load all other airbases from Database
+            var allBases = DataLoader.LoadAirbaseDatabase();
+            var nearbyAllied = new List<(MapLocation Location, float Distance)>();
 
-			map.Locations.Add(new MapLocation
-			{
-				Id = "bridge_1",
-				Name = "Menin Road Bridge",
-				Coordinates = new Vector2(28, 18),
-				Type = MapLocation.LocationType.Bridge,
-				Nation = "Germany",
-				IsDiscovered = false,
-				Notes = "Strategic crossing point"
-			});
+            foreach (var b in allBases)
+            {
+                if (b.Name == homeBase.Name) continue;
 
-			return map;
-		}
-	}
+                // Date filtering
+                if (!IsBaseActive(b.ActiveYears, currentYear)) continue;
+
+                Vector2 worldPos = map.GetWorldCoordinates(b.Coordinates);
+
+                // Safety: Skip invalid/unparsed coordinates
+                if (b.Coordinates.Length() < 0.01f) continue;
+
+                float dist = (worldPos - homeWorldPos).Length();
+                if (dist < 60)
+                {
+                    bool isAllied = (b.Nation == homeBase.Nation) || (homeBase.Nation != "Germany" && b.Nation != "Germany");
+                    var type = isAllied ? MapLocation.LocationType.AlliedBase : MapLocation.LocationType.EnemyAirfield;
+
+                    var loc = AddLocation(map, $"base_{b.Name.ToLower().Replace(" ", "_")}", b.Name, worldPos, type, b.Nation, false);
+                    if (isAllied && loc != null)
+                    {
+                        nearbyAllied.Add((loc, dist));
+                    }
+                }
+            }
+
+            // Discover 2 nearest allied bases
+            if (nearbyAllied.Count > 0)
+            {
+                var sorted = nearbyAllied.OrderBy(x => x.Distance).ToList();
+                for (int i = 0; i < Math.Min(2, sorted.Count); i++)
+                {
+                    sorted[i].Location.IsDiscovered = true;
+                    sorted[i].Location.DiscoveredDate = GameManager.Instance.CurrentDate;
+
+                    // Make one of them a supply depot for gameplay variety
+                    if (i == 0) sorted[i].Location.Type = MapLocation.LocationType.SupplyDepot;
+                }
+            }
+
+            // 3. Define Historical Front Line (Approximation)
+            if (homeBase.Nation == "Italy")
+            {
+                // Italian Front (Isonzo/Piave approximate)
+                map.FrontLinePoints = GenerateItalianFront(homeBase.Coordinates, map);
+            }
+            else
+            {
+                // Western Front (approximate)
+                map.FrontLinePoints = GenerateWesternFront(homeBase.Coordinates, map);
+            }
+
+            // 4. Add procedural points of interest (Towns, Bridges, Factories)
+            GeneratePointsOfInterest(map, homeBase);
+
+            return map;
+        }
+
+        public static Vector2 GenerateProceduralTarget(Vector2 startPos, int distance, string nation)
+        {
+            Random rng = new Random();
+            float range = distance * 10f;
+
+            // Basic logic: Enemy is generally East (+X) on Western Front, North (+Y) in Italy
+            bool isItaly = nation == "Italy";
+
+            float angle;
+            if (isItaly)
+            {
+                // North-ish. In our coordinate system, North is -Y.
+                angle = (float)(rng.NextDouble() * Math.PI) - (float)Math.PI;
+            }
+            else
+            {
+                // East-ish (Positive X)
+                angle = (float)(rng.NextDouble() * Math.PI / 2) - (float)(Math.PI / 4);
+            }
+
+            Vector2 targetOffset = new Vector2(
+                (float)Math.Cos(angle) * range,
+                (float)Math.Sin(angle) * range
+            );
+
+            if (!isItaly)
+            {
+                targetOffset.X = Math.Abs(targetOffset.X); // Ensure East
+                targetOffset.Y = -Math.Abs(targetOffset.Y); // Ensure North-ish
+            }
+            else
+            {
+                targetOffset.Y = -Math.Abs(targetOffset.Y); // Ensure North
+            }
+
+            return startPos + targetOffset;
+        }
+
+        public static List<Vector2> GenerateWaypoints(Vector2 startPos, Vector2 targetPos, int distance)
+        {
+            var waypoints = new List<Vector2>();
+            waypoints.Add(startPos);
+
+            // Add a "dogleg"
+            if (distance > 3)
+            {
+                Random rng = new Random();
+                Vector2 midPoint = (startPos + targetPos) / 2;
+                Vector2 targetOffset = targetPos - startPos;
+                Vector2 perpendicular = new Vector2(-targetOffset.Y, targetOffset.X).Normalized();
+                float offset = (float)(rng.NextDouble() - 0.5) * targetOffset.Length() * 0.3f;
+                waypoints.Add(midPoint + perpendicular * offset);
+            }
+
+            waypoints.Add(targetPos);
+
+            // Return to start
+            waypoints.Add(startPos);
+
+            return waypoints;
+        }
+
+        private static bool IsBaseActive(string activeYears, int currentYear)
+        {
+            if (string.IsNullOrEmpty(activeYears)) return true;
+
+            // Expected formats: "1914", "1914 – 1918", "1917 - 1918"
+            string[] parts = activeYears.Split(new[] { '–', '-' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 1)
+            {
+                if (int.TryParse(parts[0].Trim(), out int start))
+                    return currentYear >= start;
+            }
+            else if (parts.Length >= 2)
+            {
+                if (int.TryParse(parts[0].Trim(), out int start) && int.TryParse(parts[1].Trim(), out int end))
+                    return currentYear >= start && currentYear <= (end + 1); // Allow small buffer
+            }
+
+            return true;
+        }
+
+        private static Vector2[] GenerateWesternFront(Vector2 homeCoords, MapData map)
+        {
+            // Simplified Western Front line points (Lon, Lat)
+            var points = new List<Vector2> {
+                new Vector2(2.5f, 51.2f), // Nieuwpoort
+                new Vector2(2.9f, 50.8f), // Ypres
+                new Vector2(2.8f, 50.4f), // Arras
+                new Vector2(3.2f, 49.8f), // St. Quentin
+                new Vector2(4.0f, 49.2f), // Reims
+                new Vector2(5.4f, 49.1f)  // Verdun
+            };
+
+            return points.Select(p => map.GetWorldCoordinates(p)).ToArray();
+        }
+
+        private static Vector2[] GenerateItalianFront(Vector2 homeCoords, MapData map)
+        {
+            // Simplified Italian Front line points (Lon, Lat)
+            var points = new List<Vector2> {
+                new Vector2(10.5f, 46.0f), // Lake Garda
+                new Vector2(11.5f, 45.8f), // Asiago
+                new Vector2(12.2f, 45.8f), // Piave River
+                new Vector2(13.5f, 46.0f)  // Isonzo
+            };
+
+            return points.Select(p => map.GetWorldCoordinates(p)).ToArray();
+        }
+
+        private static void GeneratePointsOfInterest(MapData map, AirbaseData homeBase)
+        {
+            var rng = new Random(homeBase.Name.GetHashCode()); // Seeded for consistency per base
+            Vector2 homeWorldPos = map.GetWorldCoordinates(homeBase.Coordinates);
+
+            // Add a few targets near the front line for each segment
+            if (map.FrontLinePoints == null) return;
+
+            for (int i = 0; i < map.FrontLinePoints.Length - 1; i++)
+            {
+                Vector2 a = map.FrontLinePoints[i];
+                Vector2 b = map.FrontLinePoints[i + 1];
+                Vector2 mid = (a + b) / 2;
+                Vector2 dir = (b - a).Normalized();
+                Vector2 normal = new Vector2(-dir.Y, dir.X); // Points "Eastish" or "Westish"
+
+                // Enemy side target (East of line in West, North of line in Italy?)
+                // For simplicity, offset by normal
+                float enemySideMultiplier = (homeBase.Nation == "Germany") ? -1 : 1;
+
+                Vector2 targetPos = mid + (normal * 15 * enemySideMultiplier) + (dir * (float)(rng.NextDouble() - 0.5) * 10);
+                AddLocation(map, $"bridge_{i}", "River Bridge", targetPos, MapLocation.LocationType.Bridge, "Enemy", false);
+
+                Vector2 townPos = mid - (normal * 20 * enemySideMultiplier) + (dir * (float)(rng.NextDouble() - 0.5) * 20);
+                AddLocation(map, $"town_{i}", "Frontline Town", townPos, MapLocation.LocationType.Town, homeBase.Nation, true);
+            }
+        }
+
+        private static MapLocation AddLocation(MapData map, string id, string name, Vector2 worldCoords, MapLocation.LocationType type, string nation, bool startDiscovered)
+        {
+            // Avoid duplicates
+            var existing = map.Locations.FirstOrDefault(l => l.Name == name && (l.WorldCoordinates - worldCoords).Length() < 0.1f);
+            if (existing != null)
+                return existing;
+
+            var loc = new MapLocation
+            {
+                Id = id,
+                Name = name,
+                WorldCoordinates = worldCoords,
+                Type = type,
+                Nation = nation,
+                IsDiscovered = startDiscovered,
+                DiscoveredDate = startDiscovered ? new DateTime(1917, 1, 1) : DateTime.MinValue,
+                Notes = type.ToString()
+            };
+
+            map.Locations.Add(loc);
+            return loc;
+        }
+    }
 }
