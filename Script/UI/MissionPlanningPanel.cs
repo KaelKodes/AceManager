@@ -542,6 +542,13 @@ namespace AceManager.UI
 
 		private void UpdateCostPreview()
 		{
+			Vector2 homeWorldPos = GetHomeWorldPos();
+			Vector2 targetPos = _manualTargetPos ?? MapData.GenerateProceduralTarget(homeWorldPos, (int)_distanceSlider.Value, GameManager.Instance.SelectedNation);
+			UpdateCostPreview(targetPos);
+		}
+
+		private void UpdateCostPreview(Vector2 targetPos)
+		{
 			int distance = (int)_distanceSlider.Value;
 			var selectedType = (MissionType)_typeOption.Selected;
 
@@ -567,7 +574,8 @@ namespace AceManager.UI
 				baseAmmo = selectedType == MissionType.Bombing ? 60 : 20;
 			}
 
-			_costPreview.Text = $"Flights: {flightCount} | Crew: {crewCount} | Fuel: ~{baseFuel} | Ammo: ~{baseAmmo}";
+			string gridRef = GridSystem.WorldToGrid(targetPos, GameManager.Instance.SectorMap);
+			_costPreview.Text = $"Flights: {flightCount} | Crew: {crewCount} | Fuel: ~{baseFuel} | Ammo: ~{baseAmmo} | Sector: {gridRef}";
 		}
 
 		private void OnCancelPressed()

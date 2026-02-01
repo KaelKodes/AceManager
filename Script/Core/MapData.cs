@@ -55,6 +55,14 @@ namespace AceManager.Core
         [Export] public Vector2 SectorMax { get; set; }
         [Export] public string SectorName { get; set; }
 
+        // Tactical Calibration (Synced with UI for Western Front)
+        [Export] public float LonOffset { get; set; } = -0.5f;
+        [Export] public float LatOffset { get; set; } = 0.2f;
+        [Export] public float LonSpread { get; set; } = 1.0f;
+        [Export] public float LatSpread { get; set; } = 0.9f;
+        [Export] public float PivotLon { get; set; } = 3.5f;
+        [Export] public float PivotLat { get; set; } = 50.0f;
+
         public Vector2 GetWorldCoordinates(Vector2 latLon)
         {
             // 1 degree Latitude = ~111km
@@ -66,6 +74,26 @@ namespace AceManager.Core
             float y = -latLon.Y * latScale; // Lat increases North, Godot Y increases South
 
             return new Vector2(x, y);
+        }
+
+        /// <summary>
+        /// Converts raw World KM to "Tactical KM" matching the visual map calibration.
+        /// </summary>
+        public Vector2 GetTacticalCoordinates(Vector2 worldPosKM)
+        {
+            // Center of the Front (Nieuport to Belfort approx)
+            Vector2 pivotKM = GetWorldCoordinates(new Vector2(PivotLon, PivotLat));
+            Vector2 offsetKM = GetWorldCoordinates(new Vector2(LonOffset, LatOffset));
+
+            // 1. Spread around pivot
+            float distFromPivotX = worldPosKM.X - pivotKM.X;
+            float spreadX = pivotKM.X + (distFromPivotX * LonSpread);
+
+            float distFromPivotY = worldPosKM.Y - pivotKM.Y;
+            float spreadY = pivotKM.Y + (distFromPivotY * LatSpread);
+
+            // 2. Apply Global Offset
+            return new Vector2(spreadX + offsetKM.X, spreadY + offsetKM.Y);
         }
 
         public List<MapLocation> GetDiscoveredLocations()

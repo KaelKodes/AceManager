@@ -20,6 +20,8 @@ namespace AceManager.UI
         private Line2D _missionDepartureLine;
         private Line2D _missionReturnLine;
         private TextureRect _backdrop;
+        private Control _gridLayer;
+        private Label _coordLabel;
 
         // Calibration for the provided Western Front map image
         // Adjusted to match aspect ratio (1.34) and visual alignment.
@@ -41,14 +43,7 @@ namespace AceManager.UI
         private Vector2 _homeWorldPos = Vector2.Zero;
 
         // Debug Editor State
-        // Debug Editor State
         private bool _debugEditMode = false; // Calibration complete
-
-        // Base Calibration Variables
-        private float _baseLonOffset = -0.5f; // Global shift (deg) (Final)
-        private float _baseLatOffset = 0.2f;  // Global vertical shift (deg) (Final)
-        private float _baseLonSpread = 1.0f;  // Lon Spread multiplier (Final)
-        private float _baseLatSpread = 0.9f;  // Lat Spread multiplier (Final)
         private Label _calibrationLabel;
 
         private Control _debugContainer;
@@ -133,6 +128,16 @@ namespace AceManager.UI
             _debugContainer.MouseFilter = MouseFilterEnum.Pass;
             _mapArea.AddChild(_debugContainer);
 
+            // Grid Layer
+            _gridLayer = new Control { Name = "GridLayer", MouseFilter = MouseFilterEnum.Ignore };
+            _mapArea.AddChild(_gridLayer);
+            _gridLayer.Draw += OnGridDraw;
+
+            _coordLabel = new Label { Name = "CoordLabel" };
+            _coordLabel.AddThemeFontSizeOverride("font_size", 12);
+            _coordLabel.SelfModulate = new Color(1, 1, 1, 0.8f);
+            _mapArea.AddChild(_coordLabel);
+
             // Print Export Button (temporary UI hack, usually would be a separate Scene)
             if (_debugEditMode)
             {
@@ -210,7 +215,11 @@ namespace AceManager.UI
 
             // Print Button
             var btnPrint = new Button { Text = "PRINT VALUES" };
-            btnPrint.Pressed += () => GD.Print($"OFFSET_X: {_baseLonOffset:F3}, OFFSET_Y: {_baseLatOffset:F3}, SPREAD_X: {_baseLonSpread:F3}, SPREAD_Y: {_baseLatSpread:F3}");
+            btnPrint.Pressed += () =>
+            {
+                if (_mapData != null)
+                    GD.Print($"OFFSET_X: {_mapData.LonOffset:F3}, OFFSET_Y: {_mapData.LatOffset:F3}, SPREAD_X: {_mapData.LonSpread:F3}, SPREAD_Y: {_mapData.LatSpread:F3}");
+            };
             vbox.AddChild(btnPrint);
 
             // Export Frontline Button
@@ -221,19 +230,21 @@ namespace AceManager.UI
 
             // Label
             _calibrationLabel = new Label();
-            _calibrationLabel.Text = $"X: {_baseLonOffset:F2} | Y: {_baseLatOffset:F2} | SprX: {_baseLonSpread:F2} | SprY: {_baseLatSpread:F2}";
+            if (_mapData != null)
+                _calibrationLabel.Text = $"X: {_mapData.LonOffset:F2} | Y: {_mapData.LatOffset:F2} | SprX: {_mapData.LonSpread:F2} | SprY: {_mapData.LatSpread:F2}";
             vbox.AddChild(_calibrationLabel);
         }
 
         private void AdjustCalibration(float xDelta, float spreadXDelta, float yDelta, float spreadYDelta)
         {
-            _baseLonOffset += xDelta;
-            _baseLonSpread += spreadXDelta;
-            _baseLatOffset += yDelta;
-            _baseLatSpread += spreadYDelta;
+            if (_mapData == null) return;
+            _mapData.LonOffset += xDelta;
+            _mapData.LonSpread += spreadXDelta;
+            _mapData.LatOffset += yDelta;
+            _mapData.LatSpread += spreadYDelta;
 
             if (_calibrationLabel != null)
-                _calibrationLabel.Text = $"X: {_baseLonOffset:F2} | Y: {_baseLatOffset:F2} | SprX: {_baseLonSpread:F2} | SprY: {_baseLatSpread:F2}";
+                _calibrationLabel.Text = $"X: {_mapData.LonOffset:F2} | Y: {_mapData.LatOffset:F2} | SprX: {_mapData.LonSpread:F2} | SprY: {_mapData.LatSpread:F2}";
             UpdateVisualPositions();
         }
 
@@ -297,8 +308,23 @@ namespace AceManager.UI
                 Vector2 delta = mm.Relative / _mapScale;
                 _viewOffset -= delta;
                 UpdateVisualPositions();
+                _gridLayer.QueueRedraw();
+                UpdateCursorCoord(mm.Position);
                 AcceptEvent();
             }
+        }
+
+        private void UpdateCursorCoord(Vector2 mousePos)
+        {
+            Vector2 homeWorldPos = GetHomeWorldPos();
+            Vector2 center = _mapArea.Size / 2;
+            Vector2 currentOrigin = homeWorldPos + _viewOffset;
+
+            // Screen to World
+            Vector2 worldPos = currentOrigin + (mousePos - center) / _mapScale;
+            string gridRef = GridSystem.WorldToGrid(worldPos, _mapData);
+            _coordLabel.Text = gridRef;
+            _coordLabel.Position = mousePos + new Vector2(15, 15);
         }
 
         public void ShowMap(MapData data)
@@ -436,6 +462,77 @@ namespace AceManager.UI
             }
         }
 
+        private void UpdateLegend()
+        {
+            if (_legendPanel == null) return;
+            // Simplified for background mode
+            _legendLabel.Text = _isMapActive ? "PAN: Left Drag | ZOOM: Wheel" : "CLICK TO INTERACT";
+        }
+
+        private void OnGridDraw()
+        {
+            if (_mapData == null || _mapScale < 1.0f) return;
+
+            Vector2 areaSize = _mapArea.Size;
+            Vector2 center = areaSize / 2;
+            Vector2 homeWorldPos = GetHomeWorldPos();
+            Vector2 currentOrigin = homeWorldPos + _viewOffset;
+
+            float spacing = GridSystem.GridSizeKM * _mapScale;
+            if (spacing < 5) return; // Don't draw if too dense
+
+            Color gridColor = new Color(1, 1, 1, 0.15f);
+            Color labelColor = new Color(1, 1, 1, 0.4f);
+
+            // Viewport bounds in world space
+            Vector2 viewTopLeft = currentOrigin - (center / _mapScale);
+            Vector2 viewBottomRight = currentOrigin + (center / _mapScale);
+
+            // Intersect view with validated map world bounds
+            float drawMinX = Math.Max(viewTopLeft.X, _worldMinKM.X);
+            float drawMaxX = Math.Min(viewBottomRight.X, _worldMaxKM.X);
+            float drawMinY = Math.Max(viewTopLeft.Y, _worldMinKM.Y);
+            float drawMaxY = Math.Min(viewBottomRight.Y, _worldMaxKM.Y);
+
+            if (drawMaxX <= drawMinX || drawMaxY <= drawMinY) return;
+
+            // Vertical Lines (Columns)
+            int startCol = (int)Math.Floor(drawMinX / GridSystem.GridSizeKM);
+            int endCol = (int)Math.Floor(drawMaxX / GridSystem.GridSizeKM);
+
+            for (int colIdx = startCol; colIdx <= endCol; colIdx++)
+            {
+                float x = colIdx * GridSystem.GridSizeKM;
+                if (x < _worldMinKM.X || x > _worldMaxKM.X) continue;
+
+                Vector2 p1 = center + (new Vector2(x, drawMinY) - currentOrigin) * _mapScale;
+                Vector2 p2 = center + (new Vector2(x, drawMaxY) - currentOrigin) * _mapScale;
+                _gridLayer.DrawLine(p1, p2, gridColor, 1.0f);
+
+                // Column Label (Show at the top of the visible map area)
+                string colName = GridSystem.GetColumnLetter(colIdx);
+                _gridLayer.DrawString(ThemeDB.FallbackFont, p1 + new Vector2(5, 20), colName, HorizontalAlignment.Left, -1, 10, labelColor);
+            }
+
+            // Horizontal Lines (Rows)
+            int startRow = (int)Math.Floor(drawMinY / GridSystem.GridSizeKM);
+            int endRow = (int)Math.Floor(drawMaxY / GridSystem.GridSizeKM);
+
+            for (int rowIdx = startRow; rowIdx <= endRow; rowIdx++)
+            {
+                float y = rowIdx * GridSystem.GridSizeKM;
+                if (y < _worldMinKM.Y || y > _worldMaxKM.Y) continue;
+
+                Vector2 p1 = center + (new Vector2(drawMinX, y) - currentOrigin) * _mapScale;
+                Vector2 p2 = center + (new Vector2(drawMaxX, y) - currentOrigin) * _mapScale;
+                _gridLayer.DrawLine(p1, p2, gridColor, 1.0f);
+
+                // Row Label (Show at the left of the visible map area)
+                string rowName = (rowIdx + 1).ToString();
+                _gridLayer.DrawString(ThemeDB.FallbackFont, p1 + new Vector2(5, -5), rowName, HorizontalAlignment.Left, -1, 10, labelColor);
+            }
+        }
+
         private void UpdateVisualPositions()
         {
             if (_mapData == null) return;
@@ -459,6 +556,8 @@ namespace AceManager.UI
                 _backdrop.Position = center + (_worldMinKM - currentOrigin) * _mapScale;
                 _backdrop.Visible = true;
             }
+
+            _gridLayer.QueueRedraw();
 
             // Update front line points
             if (_mapData.FrontLinePoints != null && _frontLines.Count > 0)
@@ -529,28 +628,13 @@ namespace AceManager.UI
 
         private Vector2 GetVisualPosition(Vector2 worldPosKM)
         {
-            // Dispersion Logic
-            float pivotLon = 3.5f;     // Center of the Front
-            float pivotX = _mapData.GetWorldCoordinates(new Vector2(pivotLon, 50)).X;
+            if (_mapData == null) return Vector2.Zero;
 
-            // 1. Spread around pivot
-            float distFromPivotX = worldPosKM.X - pivotX;
-            float spreadX = pivotX + (distFromPivotX * _baseLonSpread);
+            Vector2 adjustedWorld = _mapData.GetTacticalCoordinates(worldPosKM);
 
-            // Vertical Dispersion (Pivot around 50N approx, converted to KM)
-            // 50N is roughly middle of our map
-            float pivotY = _mapData.GetWorldCoordinates(new Vector2(0, 50.0f)).Y;
-            float distFromPivotY = worldPosKM.Y - pivotY;
-            float spreadY = pivotY + (distFromPivotY * _baseLatSpread);
-
-            // 2. Apply Global Offset (converted to km)
-            Vector2 offsetKM = _mapData.GetWorldCoordinates(new Vector2(_baseLonOffset, _baseLatOffset));
-
-            Vector2 adjustedWorld = new Vector2(spreadX + offsetKM.X, spreadY + offsetKM.Y);
-
-            // 3. Screen Transform
-            Vector2 center = _mapArea.Size / 2;
-            Vector2 currentOrigin = _homeWorldPos + _viewOffset;
+            Vector2 areaSize = _mapArea.Size;
+            Vector2 center = areaSize / 2;
+            Vector2 currentOrigin = GetHomeWorldPos() + _viewOffset;
 
             return center + (adjustedWorld - currentOrigin) * _mapScale;
         }
@@ -707,16 +791,11 @@ namespace AceManager.UI
             UpdateVisualPositions();
         }
 
-        private void UpdateLegend()
+        private Vector2 GetHomeWorldPos()
         {
-            _legendLabel.Text = @"LEGEND
-★ Home Base
-✦ Allied Base
-◆ Supply Depot
-✚ Hospital
-✈ Enemy Airfield
-⚔ Enemy Position
-═══ Front Line";
+            if (_mapData == null) return Vector2.Zero;
+            var homeLoc = _mapData.Locations.FirstOrDefault(l => l.Id == "home_base");
+            return homeLoc?.WorldCoordinates ?? Vector2.Zero;
         }
 
         private void OnClosePressed()
@@ -798,8 +877,8 @@ namespace AceManager.UI
 
                 // Convert screen delta to World KM delta
                 // Account for Spread factor on both axes
-                float spreadSafeX = Math.Max(0.1f, _baseLonSpread);
-                float spreadSafeY = Math.Max(0.1f, _baseLatSpread);
+                float spreadSafeX = Math.Max(0.1f, _mapData?.LonSpread ?? 1.0f);
+                float spreadSafeY = Math.Max(0.1f, _mapData?.LatSpread ?? 1.0f);
 
                 float dX = deltaScreen.X / (_mapScale * spreadSafeX);
                 float dY = deltaScreen.Y / (_mapScale * spreadSafeY);
