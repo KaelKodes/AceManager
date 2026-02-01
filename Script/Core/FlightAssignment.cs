@@ -16,6 +16,7 @@ namespace AceManager.Core
         public CrewData Pilot { get; set; }
         public CrewData Gunner { get; set; } // Optional - for two-seaters
         public CrewData Observer { get; set; } // Optional - for recon two-seaters
+        public int KillsThisMission { get; set; } = 0;
 
         public FlightAssignment() { }
 

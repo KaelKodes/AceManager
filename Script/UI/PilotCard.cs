@@ -12,6 +12,9 @@ namespace AceManager.UI
         private RichTextLabel _ratingsLabel;
         private RichTextLabel _recordLabel;
         private Button _closeButton;
+        private Button _viewLogButton;
+        private PilotCard _pilotCard; // Self reference not needed but I'll use it for structure if needed
+        private PilotLogPanel _logPanel;
 
         private CrewData _pilot;
 
@@ -26,7 +29,28 @@ namespace AceManager.UI
             _recordLabel = GetNode<RichTextLabel>("%RecordLabel");
             _closeButton = GetNode<Button>("%CloseButton");
 
+            // Add View Log Button dynamically if it doesn't exist in the scene
+            // Or assume it will be added to the scene later. For now, I'll add it code-side.
+            var footer = _closeButton.GetParent() as BoxContainer;
+            if (footer != null)
+            {
+                _viewLogButton = new Button { Text = "VIEW MISSION LOG", CustomMinimumSize = new Vector2(180, 40) };
+                footer.AddChild(_viewLogButton);
+                footer.MoveChild(_viewLogButton, 0); // Put it before the close button
+                _viewLogButton.Pressed += OnViewLogPressed;
+            }
+
             _closeButton.Pressed += OnClosePressed;
+        }
+
+        private void OnViewLogPressed()
+        {
+            if (_logPanel == null)
+            {
+                _logPanel = new PilotLogPanel();
+                AddChild(_logPanel);
+            }
+            _logPanel.DisplayLog(_pilot);
         }
 
         public void ShowPilot(CrewData pilot)

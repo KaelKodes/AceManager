@@ -56,6 +56,15 @@ namespace AceManager.Core
         [Export] public Godot.Collections.Array<PilotTrait> PositiveTraits { get; set; } = new Godot.Collections.Array<PilotTrait>();
         [Export] public Godot.Collections.Array<PilotTrait> NegativeTraits { get; set; } = new Godot.Collections.Array<PilotTrait>();
 
+        // Mission History (Log Book)
+        [Export] public Godot.Collections.Array<PilotLogEntry> MissionHistory { get; set; } = new Godot.Collections.Array<PilotLogEntry>();
+
+        public void AddLogEntry(PilotLogEntry entry)
+        {
+            MissionHistory.Insert(0, entry); // Most recent first
+            if (MissionHistory.Count > 50) MissionHistory.RemoveAt(50); // Keep last 50 entries
+        }
+
         // Progression Tracking
         public System.Collections.Generic.Dictionary<string, float> DailyImprovements { get; set; } = new System.Collections.Generic.Dictionary<string, float>();
 

@@ -404,6 +404,7 @@ namespace AceManager.Core
             {
                 var killer = validAssignments[_rng.Next(validAssignments.Count)];
                 killer.Pilot.AerialVictories++;
+                killer.KillsThisMission++;
                 killer.Pilot.AddImprovement("GUN", 1.0f);
                 killer.Pilot.AddImprovement("OA", 0.5f);
                 killer.Pilot.AddImprovement("CMP", 0.5f);
@@ -533,7 +534,57 @@ namespace AceManager.Core
 
                 // Apply the gains
                 pilot.ApplyDailyImprovements();
+
+                // 7. Generate Personal Log Entry
+                string narrative = GeneratePersonalNarrative(assignment, mission);
+                var entry = new PilotLogEntry(
+                    GameManager.Instance.CurrentDate.ToString("MMM d, yyyy"),
+                    mission.Type.ToString(),
+                    narrative,
+                    assignment.KillsThisMission,
+                    mission.ResultBand.ToString(),
+                    assignment.Pilot.Status == PilotStatus.Wounded,
+                    assignment.Aircraft?.Status == AircraftStatus.Lost
+                );
+
+                pilot.AddLogEntry(entry);
             }
+        }
+
+        private static string GeneratePersonalNarrative(FlightAssignment assignment, MissionData mission)
+        {
+            var pilot = assignment.Pilot;
+            bool wasCombat = mission.EnemyKills > 0 || mission.CrewWounded > 0 || mission.CrewKilled > 0;
+            bool didKill = pilot.DailyImprovements.ContainsKey("GUN") && pilot.DailyImprovements["GUN"] > 0; // Simple check if they were the killer
+
+            var templates = new List<string>();
+
+            if (mission.ResultBand == MissionResultBand.Disaster)
+            {
+                templates.Add("A chaotic nightmare. The Huns were everywhere. I barely made it back through the clouds.");
+                templates.Add("Absolute carnage. The formation broke early and it was every man for himself.");
+                templates.Add("Lost sight of my wingman in the first pass. The sky was full of lead.");
+            }
+            else if (didKill)
+            {
+                templates.Add($"Caught a Fokker in my sights and didn't let go until he spiraled. My first confirmed kill.");
+                templates.Add($"Closed the distance until I could see the pilot's face. One burst, and he was gone.");
+                templates.Add($"Dived from the sun and surprised an enemy scout. He never saw me coming.");
+            }
+            else if (wasCombat)
+            {
+                templates.Add("Engaged a flight of enemy scouts over the lines. A wild scrap, but no clear result.");
+                templates.Add("The Archie was thick today. Shrapnel peppered the wings, but the engine held true.");
+                templates.Add("Traded shots with a bold German pilot. He knew his business, but I lived to tell the tale.");
+            }
+            else
+            {
+                templates.Add("A quiet patrol over the Amiens sector. Nothing but clouds and the occasional flash of artillery far below.");
+                templates.Add("Visibility was poor. We scanned the horizon for hours but the Huns stayed home today.");
+                templates.Add("Drifted over the trenches for an hour. The war looks very different from five thousand feet.");
+            }
+
+            return templates[_rng.Next(templates.Count)];
         }
 
         private static void CheckForTraitBreakout(MissionData mission, CrewData pilot)
