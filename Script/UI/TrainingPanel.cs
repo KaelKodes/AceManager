@@ -47,13 +47,10 @@ namespace AceManager.UI
             wrapper.GrowVertical = GrowDirection.Both;
             AddChild(wrapper);
 
-            // Root Background (Paper)
-            var bg = new TextureRect
+            // Root Background (Solid Dark Slate)
+            var bg = new ColorRect
             {
-                Texture = GD.Load<Texture2D>("res://Assets/UI/Training/paper.png"),
-                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
-                SelfModulate = new Color(1.0f, 1.0f, 1.0f)
+                Color = new Color(0.12f, 0.10f, 0.08f) // Match the new intro panel aesthetic
             };
             bg.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
             wrapper.AddChild(bg);
