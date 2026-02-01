@@ -18,10 +18,7 @@ namespace AceManager.UI
             // Ensure the root node fills the screen
             this.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
-            // Dimming Background
-            var dim = new ColorRect { Color = new Color(0, 0, 0, 0.8f) };
-            dim.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-            AddChild(dim);
+
 
             // Center Container for the panel
             var center = new CenterContainer();
@@ -158,9 +155,11 @@ namespace AceManager.UI
             };
         }
 
+        [Signal] public delegate void CommissionAcceptedEventHandler(string captainName);
+
         private void OnAcceptPressed()
         {
-            GameManager.Instance.FinalizeCampaignStart(_nameEdit.Text);
+            EmitSignal(SignalName.CommissionAccepted, _nameEdit.Text);
             Hide();
             QueueFree();
         }

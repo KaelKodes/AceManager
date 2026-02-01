@@ -10,8 +10,8 @@ config_version=5
 
 [application]
 
-config/name="Ace Manager"
-run/main_scene="res://Scene/MainHUD.tscn"
+config/name="Bases of Aces"
+run/main_scene="res://Scene/MainMenu.tscn"
 config/features=PackedStringArray("4.6", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 

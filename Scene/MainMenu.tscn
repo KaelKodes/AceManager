@@ -1,0 +1,127 @@
+[gd_scene format=3 uid="uid://dtiuwux0ygxvn"]
+
+[ext_resource type="Script" uid="uid://ctr22nd13ewi1" path="res://Script/UI/MainMenu.cs" id="1_mainmenu"]
+[ext_resource type="Script" uid="uid://cf267qb6g06pb" path="res://Script/Visuals/CloudDrifter.cs" id="2_clouds"]
+[ext_resource type="Texture2D" path="res://Assets/Visuals/Cloud1.tres" id="3_cloud1"]
+[ext_resource type="Texture2D" path="res://Assets/Visuals/Cloud2.tres" id="4_cloud2"]
+
+[sub_resource type="Gradient" id="Gradient_sky"]
+colors = PackedColorArray(0.4, 0.6, 0.8, 1, 0.7, 0.8, 0.9, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_sky"]
+gradient = SubResource("Gradient_sky")
+fill_from = Vector2(0.5, 0)
+fill_to = Vector2(0.5, 1)
+
+[node name="MainMenu" type="Control" unique_id=1858764054]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_mainmenu")
+
+[node name="SkyBackground" type="TextureRect" parent="." unique_id=1044504145]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("GradientTexture2D_sky")
+
+[node name="BackgroundClouds" type="Control" parent="." unique_id=647612870]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_clouds")
+CloudTextures = Array[Texture2D]([ExtResource("3_cloud1"), ExtResource("4_cloud2")])
+SpawnInterval = 1.5
+SpeedMin = 30.0
+SpeedMax = 80.0
+ScaleMin = 0.4
+ScaleMax = 1.0
+OpacityMin = 0.2
+OpacityMax = 0.5
+
+[node name="MenuContainer" type="VBoxContainer" parent="." unique_id=1603905132]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -100.0
+offset_right = 150.0
+offset_bottom = 100.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="MenuContainer" unique_id=757004066]
+layout_mode = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 48
+text = "BASES of ACES"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="MenuContainer" unique_id=381787969]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="NewGameButton" type="Button" parent="MenuContainer" unique_id=1808607228]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "NEW CAMPAIGN"
+
+[node name="LoadGameButton" type="Button" parent="MenuContainer" unique_id=1202279233]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "LOAD CAMPAIGN"
+
+[node name="QuitButton" type="Button" parent="MenuContainer" unique_id=507585479]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "QUIT"
+
+[node name="OverlayContainer" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ForegroundClouds" type="Control" parent="." unique_id=1295328957]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_clouds")
+CloudTextures = Array[Texture2D]([ExtResource("3_cloud1"), ExtResource("4_cloud2")])
+SpawnInterval = 0.8
+SpeedMin = 100.0
+SpeedMax = 250.0
+ScaleMin = 1.2
+ScaleMax = 2.0
+OpacityMin = 0.6
+OpacityMax = 0.9
