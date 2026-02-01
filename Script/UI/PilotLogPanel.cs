@@ -13,25 +13,47 @@ namespace AceManager.UI
 
         public override void _Ready()
         {
+            // Ensure this control covers the full parent area
+            this.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+
             // Dimming Background
             var dim = new ColorRect { Color = new Color(0, 0, 0, 0.7f) };
             dim.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
             AddChild(dim);
 
-            // Center Container
-            var center = new CenterContainer();
-            center.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-            AddChild(center);
+            // Left-Aligned Container
+            var container = new Control();
+            container.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+            AddChild(container);
 
             // Panel Container
             var panel = new PanelContainer();
             panel.CustomMinimumSize = new Vector2(900, 700);
-            center.AddChild(panel);
 
-            // Style the panel (Vintage Logbook)
-            var style = new StyleBoxTexture
+            // Set to Center Left
+            panel.SetAnchorsAndOffsetsPreset(LayoutPreset.CenterLeft);
+            panel.OffsetLeft = 50; // Padding from left edge
+            panel.OffsetTop = -350; // Half of height (700/2) to center vertically
+            panel.OffsetBottom = 350;
+            panel.OffsetRight = 950; // 50 + 900
+
+            container.AddChild(panel);
+
+            // Style the panel (Themed Brown/Tan)
+            var style = new StyleBoxFlat
             {
-                Texture = GD.Load<Texture2D>("res://Assets/UI/PilotsLog/PilotsLog.png"),
+                BgColor = new Color(0.12f, 0.10f, 0.08f), // Deep dark brown
+                BorderWidthLeft = 4,
+                BorderWidthRight = 4,
+                BorderWidthTop = 4,
+                BorderWidthBottom = 4,
+                BorderColor = new Color(0.4f, 0.35f, 0.25f), // Tan/Brass
+                CornerRadiusTopLeft = 10,
+                CornerRadiusTopRight = 10,
+                CornerRadiusBottomLeft = 10,
+                CornerRadiusBottomRight = 10,
+                ShadowSize = 25,
+                ShadowColor = new Color(0, 0, 0, 0.6f),
                 ContentMarginLeft = 40,
                 ContentMarginRight = 40,
                 ContentMarginTop = 50,

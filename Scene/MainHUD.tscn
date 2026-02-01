@@ -142,6 +142,7 @@ horizontal_alignment = 1
 
 [node name="CaptainRankLabel" type="Label" parent="MarginContainer/ResourcePanel" unique_id=1973301280]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 text = "Rank: Captain"
 horizontal_alignment = 1

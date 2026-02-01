@@ -591,17 +591,103 @@ namespace AceManager.UI
 
         private string GetFacilityDescription(string name, int rating)
         {
+            string current = GetLevelDescription(name, rating);
+            string next = rating < 5 ? GetLevelDescription(name, rating + 1) : "";
+
+            string text = $"[center]{current}[/center]";
+            if (!string.IsNullOrEmpty(next))
+            {
+                text += $"\n\n[center][color=#888888][i]Potential (Level {ToRoman(rating + 1)}):[/i]\n{next}[/color][/center]";
+            }
+
+            return text;
+        }
+
+        private string GetLevelDescription(string name, int level)
+        {
             return name switch
             {
-                "Runway" => $"Determines maximum aircraft weight and takeoff safety.\n\nCurrent Level ({ToRoman(rating)}): Supports standard fighters and light bombers.",
-                "Lodging" => $"Impacts pilot fatigue recovery and morale.\n\nCurrent Level ({ToRoman(rating)}): Basic bunks, minimal comfort.",
-                "Maintenance" => $"affects repair speed and aircraft reliability.\n\nCurrent Level ({ToRoman(rating)}): Field workshops, basic tools.",
-                "Fuel Storage" => $"Maximum fuel capacity.\n\nCurrent Level ({ToRoman(rating)}): 1000 Gallons.",
-                "Ammo Storage" => $"Maximum ammunition capacity.\n\nCurrent Level ({ToRoman(rating)}): 500 Rounds.",
-                "Operations" => $"Intelligence quality and mission planning efficiency.\n\nCurrent Level ({ToRoman(rating)}): Basic maps and telephone link.",
-                "Medical" => $"Wound recovery speed and survival chance.\n\nCurrent Level ({ToRoman(rating)}): Field dressing station.",
-                "Transport" => $"Supply delivery speed and reinforcement arrival.\n\nCurrent Level ({ToRoman(rating)}): Mud roads, occasional trucks.",
-                "Training" => $"Experience gain for pilots and quality of replacements.\n\nCurrent Level ({ToRoman(rating)}): Ad-hoc lectures.",
+                "Runway" => level switch
+                {
+                    1 => "Emergency grass strip. Supports light scouts only.",
+                    2 => "Cleared field. Reduced takeoff accident risk.",
+                    3 => "Standard grass runway. Supports medium bombers.",
+                    4 => "Reinforced strip. All-weather operations capable.",
+                    5 => "Advanced airbase. Supports heavy multi-engine types.",
+                    _ => "Basic grass strip."
+                },
+                "Lodging" => level switch
+                {
+                    1 => "Tents and cots. Supports 8 pilots. High fatigue build-up.",
+                    2 => "Wood barracks. Supports 12 pilots. Basic comfort.",
+                    3 => "Brick quarters. Supports 16 pilots. Improved rest quality.",
+                    4 => "Officers' mess & gardens. Supports 20 pilots. Lowers stress.",
+                    5 => "Luxury chateau. Supports 24 pilots. Elite morale recovery.",
+                    _ => "Basic shelter."
+                },
+                "Maintenance" => level switch
+                {
+                    1 => "Field tools. Standard repair speed.",
+                    2 => "Canvas hangars. +10% repair efficiency.",
+                    3 => "Steel workshops. +25% repair efficiency.",
+                    4 => "Advanced machine tools. +40% repair efficiency.",
+                    5 => "Full factory support. +60% repair efficiency.",
+                    _ => "Basic tools."
+                },
+                "Fuel Storage" => level switch
+                {
+                    1 => "Drums on pallets. 1,000 Gallon capacity.",
+                    2 => "Bunker storage. 2,500 Gallon capacity.",
+                    3 => "Refueling trucks. 5,000 Gallon capacity.",
+                    4 => "Underground tanks. 10,000 Gallon capacity.",
+                    5 => "Strategic reserve. 25,000 Gallon capacity.",
+                    _ => "Basic storage."
+                },
+                "Ammo Storage" => level switch
+                {
+                    1 => "Covered crates. 500 Unit capacity.",
+                    2 => "Secured magazine. 1,200 Unit capacity.",
+                    3 => "Automated sorting. 2,500 Unit capacity.",
+                    4 => "Climate control. 5,000 Unit capacity.",
+                    5 => "Armory complex. 15,000 Unit capacity.",
+                    _ => "Basic storage."
+                },
+                "Operations" => level switch
+                {
+                    1 => "Wall maps. Basic intel reports.",
+                    2 => "Telephone link. Better targeting data.",
+                    3 => "Wireless telegraphy. Real-time sector updates.",
+                    4 => "Analysis desk. High-accuracy enemy Intel.",
+                    5 => "Command center. Complete tactical dominance.",
+                    _ => "Basic map room."
+                },
+                "Medical" => level switch
+                {
+                    1 => "Dressing station. 50% wound survival.",
+                    2 => "Field hospital. Faster recovery times.",
+                    3 => "Surgical theater. 75% wound survival.",
+                    4 => "Rehab center. Lowers chance of shell shock.",
+                    5 => "Sanatorium. Advanced psychological treatment.",
+                    _ => "Basic first aid."
+                },
+                "Transport" => level switch
+                {
+                    1 => "Horse & cart. Slow resource delivery.",
+                    2 => "Gravel roads. Reliable supply lines.",
+                    3 => "Truck pool. +20% replenishment rate.",
+                    4 => "Rail siding. +50% replenishment rate.",
+                    5 => "Logistics hub. Permanent resource surplus.",
+                    _ => "Basic cartage."
+                },
+                "Training" => level switch
+                {
+                    1 => "Ad-hoc lectures. Standard XP gain.",
+                    2 => "Target range. +10% Gunnery improvement.",
+                    3 => "Link trainer. +20% Control improvement.",
+                    4 => "Flight school. +50% overall XP gain.",
+                    5 => "Academy. New pilots arrive with Combat Status.",
+                    _ => "Basic training."
+                },
                 _ => "Standard base facility."
             };
         }

@@ -13,6 +13,7 @@ namespace AceManager.UI
         private VBoxContainer _rightColumn;
         private Button _continueButton;
         private ScrollContainer _logScroll;
+        private PanelContainer _scoreCard;
 
         [Signal] public delegate void DebriefCompletedEventHandler();
 
@@ -81,6 +82,11 @@ namespace AceManager.UI
             resultLabel.AddThemeColorOverride("font_color", GetResultColor(_mission.ResultBand));
             centerVBox.AddChild(resultLabel);
 
+            // --- Score Card ---
+            _scoreCard = BuildScoreCard();
+            _scoreCard.Modulate = new Color(1, 1, 1, 0); // Hide for animation
+            centerVBox.AddChild(_scoreCard);
+
             // Summary Text (Scrollable)
             _logScroll = new ScrollContainer
             {
@@ -90,6 +96,7 @@ namespace AceManager.UI
             };
             centerVBox.AddChild(_logScroll);
 
+            // Dismiss Button
             var summaryLabel = new RichTextLabel
             {
                 Text = "[center]" + string.Join("\n", _mission.MissionLog) + "[/center]", // Join all log entries and center
@@ -147,8 +154,12 @@ namespace AceManager.UI
             // Start Cinematic Scroll
             AnimateLogScroll();
 
+            // Show Score Card
+            var scorecardTween = CreateTween();
+            scorecardTween.TweenProperty(_scoreCard, "modulate", new Color(1, 1, 1, 1), 0.5f);
+            await ToSignal(GetTree().CreateTimer(0.6f), "timeout");
+
             // Show Continue Button after all animations
-            await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
             _continueButton.Show();
         }
 
@@ -223,6 +234,67 @@ namespace AceManager.UI
             }
 
             return panel;
+        }
+
+        private PanelContainer BuildScoreCard()
+        {
+            var panel = new PanelContainer();
+            var style = new StyleBoxFlat
+            {
+                BgColor = new Color(0.15f, 0.15f, 0.15f, 0.8f),
+                BorderWidthLeft = 2,
+                BorderWidthRight = 2,
+                BorderWidthTop = 2,
+                BorderWidthBottom = 2,
+                BorderColor = new Color(0.3f, 0.3f, 0.3f, 1.0f),
+                CornerRadiusTopLeft = 5,
+                CornerRadiusTopRight = 5,
+                CornerRadiusBottomLeft = 5,
+                CornerRadiusBottomRight = 5,
+                ContentMarginLeft = 20,
+                ContentMarginRight = 20,
+                ContentMarginTop = 10,
+                ContentMarginBottom = 10
+            };
+            panel.AddThemeStyleboxOverride("panel", style);
+            panel.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
+
+            var hBox = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+            hBox.AddThemeConstantOverride("separation", 30);
+            panel.AddChild(hBox);
+
+            hBox.AddChild(CreateScoreItem("KILLS", _mission.EnemyKills.ToString(), new Color(1, 0.8f, 0.2f)));
+            hBox.AddChild(CreateScoreItem("LOSSES", _mission.AircraftLost.ToString(), _mission.AircraftLost > 0 ? new Color(1, 0.3f, 0.3f) : Colors.White));
+            hBox.AddChild(CreateScoreItem("FUEL", _mission.FuelConsumed.ToString(), Colors.White));
+            hBox.AddChild(CreateScoreItem("AMMO", _mission.AmmoConsumed.ToString(), Colors.White));
+
+            return panel;
+        }
+
+        private VBoxContainer CreateScoreItem(string label, string value, Color valueColor)
+        {
+            var vBox = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+
+            var lbl = new Label
+            {
+                Text = label,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            lbl.AddThemeFontSizeOverride("font_size", 12);
+            lbl.AddThemeColorOverride("font_color", new Color(0.7f, 0.7f, 0.7f));
+            vBox.AddChild(lbl);
+
+            var val = new Label
+            {
+                Text = value,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                ThemeTypeVariation = "HeaderSmall"
+            };
+            val.AddThemeFontSizeOverride("font_size", 22);
+            val.AddThemeColorOverride("font_color", valueColor);
+            vBox.AddChild(val);
+
+            return vBox;
         }
 
         private Color GetResultColor(MissionResultBand result)

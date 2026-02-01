@@ -24,12 +24,42 @@ namespace AceManager.UI
 
             _closeButton.Pressed += QueueFree;
             _upgradeButton.Pressed += OnUpgradePressed;
+
+            ApplyThemeStyle();
+        }
+
+        private void ApplyThemeStyle()
+        {
+            var panel = GetNode<PanelContainer>("CenterContainer/PanelContainer");
+            if (panel == null) return;
+
+            var style = new StyleBoxFlat
+            {
+                BgColor = new Color(0.12f, 0.10f, 0.08f), // Deep dark brown
+                BorderWidthLeft = 4,
+                BorderWidthRight = 4,
+                BorderWidthTop = 4,
+                BorderWidthBottom = 4,
+                BorderColor = new Color(0.4f, 0.35f, 0.25f), // Brass/Bronze/Tan
+                CornerRadiusTopLeft = 10,
+                CornerRadiusTopRight = 10,
+                CornerRadiusBottomLeft = 10,
+                CornerRadiusBottomRight = 10,
+                ShadowSize = 20,
+                ShadowColor = new Color(0, 0, 0, 0.5f),
+                ContentMarginLeft = 30,
+                ContentMarginRight = 30,
+                ContentMarginTop = 30,
+                ContentMarginBottom = 30
+            };
+            panel.AddThemeStyleboxOverride("panel", style);
         }
 
         public void ShowInfo(string title, string content)
         {
             _titleLabel.Text = title;
-            _contentLabel.Text = content;
+            _contentLabel.BbcodeEnabled = true;
+            _contentLabel.Text = $"[center]{content}[/center]";
             _upgradeButton.Hide();
             _costLabel.Hide();
         }
@@ -38,6 +68,7 @@ namespace AceManager.UI
         {
             _currentFacility = name;
             _titleLabel.Text = $"{name} Facility (Level {ToRoman(level)})";
+            _contentLabel.BbcodeEnabled = true;
             _contentLabel.Text = description;
 
             if (level < 5)
