@@ -172,14 +172,10 @@ namespace AceManager.UI
             var mission = GameManager.Instance.LastCompletedMission;
             if (mission == null) return;
 
-            if (_missionResultPanel == null)
-            {
-                _missionResultPanel = _resultPanelScene.Instantiate<Control>();
-                AddChild(_missionResultPanel);
-            }
-
-            var resultPanel = _missionResultPanel as MissionResultPanel;
-            resultPanel?.DisplayResults(mission);
+            // Use the new Immersive Debrief Panel
+            var debrief = new DebriefingPanel();
+            AddChild(debrief);
+            debrief.Setup(mission);
         }
 
         private void OnViewMapPressed()
@@ -322,14 +318,10 @@ namespace AceManager.UI
             var mission = GameManager.Instance.LastCompletedMission;
             if (mission == null) return;
 
-            if (!GodotObject.IsInstanceValid(_missionResultPanel))
-            {
-                _missionResultPanel = _resultPanelScene.Instantiate<Control>();
-                AddChild(_missionResultPanel);
-            }
-
-            var resultPanel = _missionResultPanel as MissionResultPanel;
-            resultPanel?.DisplayResults(mission);
+            // Auto-open new debrief on completion
+            var debrief = new DebriefingPanel();
+            AddChild(debrief);
+            debrief.Setup(mission);
         }
 
         private void UpdateMissionButtonState()
