@@ -26,14 +26,12 @@ namespace AceManager.UI
 
         // Panels (loaded dynamically)
         private Control _missionPlanningPanel;
-        private Control _missionResultPanel;
         private Control _briefingPanel;
         private Control _commandMapPanel;
         private Control _rosterPanel;
         private Control _trainingPanel;
 
         private PackedScene _planningPanelScene;
-        private PackedScene _resultPanelScene;
         private PackedScene _briefingPanelScene;
         private PackedScene _commandMapScene;
         private PackedScene _rosterPanelScene;
@@ -61,7 +59,6 @@ namespace AceManager.UI
 
             // Load panel scenes
             _planningPanelScene = GD.Load<PackedScene>("res://Scene/UI/MissionPlanningPanel.tscn");
-            _resultPanelScene = GD.Load<PackedScene>("res://Scene/UI/MissionResultPanel.tscn");
             _briefingPanelScene = GD.Load<PackedScene>("res://Scene/UI/DailyBriefingPanel.tscn");
             _commandMapScene = GD.Load<PackedScene>("res://Scene/UI/CommandMapPanel.tscn");
             _rosterPanelScene = GD.Load<PackedScene>("res://Scene/UI/RosterPanel.tscn");

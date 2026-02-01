@@ -29,14 +29,13 @@ namespace AceManager.UI
 
 		// Map elements
 		private Control _flightMapArea;
-		private Control _mapMarkerContainer;
-		private Line2D _departureLine;
-		private Line2D _returnLine;
 		private Label _targetLabel;
-		private Vector2? _manualTargetPos = null;
-		private string _manualTargetName = "";
-		private float _briefingMapScale = 6f; // KM to Pixels
-		private Vector2 _mapCenter;
+		private Control _targetMarker; // Custom marker for mission target
+
+		// Refactored Components
+		private RoutePlanner _routePlanner;
+		private MapRenderer _renderer;
+		private MapInputController _inputController;
 
 		private enum SelectionMode
 		{
@@ -75,32 +74,68 @@ namespace AceManager.UI
 			_trainingButton = GetNode<Button>("%TrainingButton");
 			_flightMapArea = GetNode<Control>("%FlightMapArea");
 
+			// Initialize Helpers
+			_routePlanner = new RoutePlanner();
+			_routePlanner.OnPathUpdated += OnPathUpdated;
+
 			SetupMapNodes();
 			SetupOptions();
 			ConnectSignals();
+
 			_pilotList.TooltipText = "Double-click to view Pilot Details";
 			_aircraftList.TooltipText = "Double-click to view Aircraft Details";
+
 			_isReady = true;
 			RefreshData();
 		}
 
 		private void SetupMapNodes()
 		{
-			_mapMarkerContainer = new Control { Name = "Markers" };
-			_flightMapArea.AddChild(_mapMarkerContainer);
+			// Initialize Renderer
+			_renderer = new MapRenderer(_flightMapArea);
+			// Default scale for Briefing Map (might be overridden)
+			_renderer.MapScale = 6f;
 
-			_departureLine = new Line2D { Width = 3, DefaultColor = new Color(0.2f, 1.0f, 0.2f, 0.7f) }; // Green
-			_flightMapArea.AddChild(_departureLine);
+			// Set bounds (copied from CommandMapPanel or MapData - reusing unified values)
+			float lonScale = 71f;
+			float latScale = 111f;
+			_renderer.WorldMinKM = new Vector2(-1.5f * lonScale, -52.2f * latScale);
+			_renderer.WorldMaxKM = new Vector2(7.8f * lonScale, -48.0f * latScale);
+			_renderer.WorldSizeKM = _renderer.WorldMaxKM - _renderer.WorldMinKM;
 
-			_returnLine = new Line2D { Width = 3, DefaultColor = new Color(1.0f, 0.2f, 0.2f, 0.7f) }; // Red
-			_flightMapArea.AddChild(_returnLine);
+			// Initialize Input Controller (Pan/Zoom enabled for better UX)
+			_inputController = new MapInputController(
+				_flightMapArea,
+				(delta) => { _renderer.ViewOffset -= delta; UpdateMapVisuals(); }, // Pan
+				(zoom) => { _renderer.MapScale = zoom; UpdateMapVisuals(); },   // Zoom
+				OnMapCursorMove, // Cursor
+				(active) => { } // SetActive state
+			);
+			_inputController.SetZoom(6f);
+
+			// Custom Target Marker (independent of renderer's internal markers)
+			_targetMarker = new Control { Name = "CalculatedTargetMarker" };
+			var dot = new ColorRect
+			{
+				Size = new Vector2(10, 10),
+				Position = new Vector2(-5, -5),
+				Color = Colors.Red
+			};
+			_targetMarker.AddChild(dot);
+			_flightMapArea.AddChild(_targetMarker); // Add on top
 
 			_targetLabel = new Label { Text = "TARGET", HorizontalAlignment = HorizontalAlignment.Center };
 			_targetLabel.AddThemeFontSizeOverride("font_size", 10);
 			_flightMapArea.AddChild(_targetLabel);
 
+			// Hook input for clicking (still needed for setting target manualy)
 			_flightMapArea.GuiInput += OnMapInput;
-			_flightMapArea.Resized += () => CallDeferred(nameof(UpdateMapPreview));
+			_flightMapArea.Resized += () => CallDeferred(nameof(UpdateMapVisuals));
+		}
+
+		private void OnMapCursorMove(Vector2 localPos)
+		{
+			// Optional: Show coordinate tooltip?
 		}
 
 		private void SetupOptions()
@@ -133,8 +168,17 @@ namespace AceManager.UI
 			_availablePilots = gm.Roster.GetAvailablePilots();
 			_pendingAssignments.Clear();
 			_flightLeader = null;
-			_manualTargetPos = null;
-			_manualTargetName = "";
+
+			// Setup Map Data
+			if (gm.SectorMap != null)
+			{
+				var hLoc = gm.SectorMap.Locations.FirstOrDefault(l => l.Id == "home_base");
+				Vector2 homeCoords = hLoc?.WorldCoordinates ?? Vector2.Zero;
+
+				_routePlanner.HomeWorldPos = homeCoords;
+				_renderer.HomeWorldPos = homeCoords; // Important: center view on home
+				_renderer.SetMapData(gm.SectorMap);
+			}
 
 			// Reset selection flow
 			_currentMode = SelectionMode.PickAircraft;
@@ -164,7 +208,8 @@ namespace AceManager.UI
 				}
 			}
 
-			UpdateMapPreview();
+			// Initial path refresh
+			_routePlanner.RefreshPath();
 		}
 
 		public override void _Notification(int what)
@@ -184,13 +229,15 @@ namespace AceManager.UI
 			// Get pilots already assigned
 			var assignedPilots = _pendingAssignments.Select(a => a.Pilot).ToHashSet();
 			var assignedGunners = _pendingAssignments.Where(a => a.Gunner != null).Select(a => a.Gunner).ToHashSet();
+			var assignedObservers = _pendingAssignments.Where(a => a.Observer != null).Select(a => a.Observer).ToHashSet();
 
 			// Also exclude pilot of current temp assignment
 			if (_tempAssignment?.Pilot != null) assignedPilots.Add(_tempAssignment.Pilot);
 			if (_tempAssignment?.Gunner != null) assignedGunners.Add(_tempAssignment.Gunner);
+			if (_tempAssignment?.Observer != null) assignedObservers.Add(_tempAssignment.Observer);
 
 			var available = _availablePilots
-				.Where(p => !assignedPilots.Contains(p) && !assignedGunners.Contains(p))
+				.Where(p => !assignedPilots.Contains(p) && !assignedGunners.Contains(p) && !assignedObservers.Contains(p))
 				.OrderByDescending(p => GetPilotMissionScore(p))
 				.ToList();
 
@@ -300,15 +347,18 @@ namespace AceManager.UI
 				int km = (int)value;
 				int miles = (int)(km * 0.621371f);
 				_distanceValue.Text = $"{km} km ({miles} mi)";
-				UpdateCostPreview();
-				_manualTargetPos = null; // Reset manual target if distance changes via slider
-				UpdateMapPreview();
+
+				// Update Planner
+				_routePlanner.SetDistance(km);
+				// Call OnPathUpdated automatically
 			};
+
 			_typeOption.ItemSelected += (index) =>
 			{
 				RefreshLists();
-				UpdateMapPreview();
+				_routePlanner.RefreshPath(); // Type might affect generator RNG seed or logic eventually
 			};
+
 			_pilotList.ItemSelected += OnPilotSelected;
 			_aircraftList.ItemSelected += OnAircraftSelected;
 
@@ -333,6 +383,12 @@ namespace AceManager.UI
 				}
 			};
 			_flightLeaderLabel.MouseDefaultCursorShape = CursorShape.PointingHand;
+		}
+
+		private void OnPathUpdated()
+		{
+			UpdateMapVisuals();
+			UpdateCostPreview();
 		}
 
 		private void OnPilotDoubleClicked(long index)
@@ -380,7 +436,6 @@ namespace AceManager.UI
 			_aircraftCard.ShowAircraft(aircraft);
 		}
 
-
 		private void OnPilotSelected(long index)
 		{
 			if (_currentMode == SelectionMode.PickAircraft) return;
@@ -404,9 +459,8 @@ namespace AceManager.UI
 			}
 			else if (_currentMode == SelectionMode.PickObserver)
 			{
-				_tempAssignment.Observer = pilot; // Or Gunner, depending on logic
-												  // For now, let's just use Gunner as the default second seat
-				_tempAssignment.Gunner = pilot;
+				_tempAssignment.Observer = pilot;
+				_tempAssignment.Gunner = pilot; // Assign to both for compatibility for now
 				FinalizeAssignment();
 			}
 
@@ -448,6 +502,7 @@ namespace AceManager.UI
 			PopulatePilotList();
 			PopulateAircraftList();
 			UpdateAssignmentsDisplay();
+			// UpdateCostPreview called via OnPathUpdated or manually
 			UpdateCostPreview();
 			UpdateModeInstructions();
 		}
@@ -475,7 +530,7 @@ namespace AceManager.UI
 			{
 				SetListEnabled(_pilotList, true);
 				SetListEnabled(_aircraftList, false);
-				_flightLeaderLabel.Text = $"Assign Observer for the {(_tempAssignment?.Aircraft?.Definition?.Name ?? "Aircraft")} (Optional - Click here to skip)";
+				_flightLeaderLabel.Text = $"Assign Observer for the {(_tempAssignment?.Aircraft?.Definition?.Name ?? "Aircraft")}";
 				_flightLeaderLabel.SelfModulate = new Color(0.5f, 1f, 0.5f);
 			}
 			else
@@ -555,7 +610,6 @@ namespace AceManager.UI
 			if (index >= 0 && index < _pendingAssignments.Count)
 			{
 				_flightLeader = _pendingAssignments[index];
-				GD.Print($"Flight leader: {_flightLeader.Pilot.Name}");
 				UpdateAssignmentsDisplay();
 			}
 		}
@@ -567,25 +621,19 @@ namespace AceManager.UI
 				var removed = _pendingAssignments[index];
 				_pendingAssignments.RemoveAt(index);
 
-				// Reset flight leader if removed
 				if (_flightLeader == removed)
 				{
 					_flightLeader = _pendingAssignments.Count > 0 ? _pendingAssignments[0] : null;
 				}
 
-				// Refresh lists
-				PopulatePilotList();
-				PopulateAircraftList();
-				UpdateAssignmentsDisplay();
-				UpdateCostPreview();
+				RefreshLists();
 			}
 		}
 
 		private void UpdateCostPreview()
 		{
-			Vector2 homeWorldPos = GetHomeWorldPos();
-			Vector2 targetPos = _manualTargetPos ?? MapData.GenerateProceduralTarget(homeWorldPos, (int)_distanceSlider.Value, GameManager.Instance.SelectedNation);
-			UpdateCostPreview(targetPos);
+			if (_routePlanner != null)
+				UpdateCostPreview(_routePlanner.GetTargetPosition());
 		}
 
 		private void UpdateCostPreview(Vector2 targetPos)
@@ -629,7 +677,6 @@ namespace AceManager.UI
 		{
 			if (_tempAssignment != null)
 			{
-				GD.Print("Resetting current selection.");
 				_tempAssignment = null;
 				_currentMode = SelectionMode.PickAircraft;
 				RefreshLists();
@@ -655,7 +702,6 @@ namespace AceManager.UI
 			bool isGrounded = gm.TodaysBriefing?.IsFlightGrounded() ?? false;
 			if (isGrounded)
 			{
-				// Training flow
 				var instructor = _flightLeader.Pilot;
 				var trainees = _pendingAssignments.Where(a => a != _flightLeader).Select(a => a.Pilot).ToList();
 				gm.ConductTraining(trainees, instructor);
@@ -666,16 +712,11 @@ namespace AceManager.UI
 				int distance = (int)_distanceSlider.Value;
 				var risk = (RiskPosture)_riskOption.Selected;
 
-				gm.CreateMission(missionType, distance, risk, _manualTargetPos, _manualTargetName);
+				gm.CreateMission(missionType, distance, risk, _routePlanner.ManualTargetPos, _routePlanner.TargetName);
 
 				foreach (var assignment in _pendingAssignments)
 				{
 					gm.AddFlightAssignment(assignment);
-				}
-
-				if (_flightLeader != null)
-				{
-					GD.Print($"Mission launched with Flight Leader: {_flightLeader.Pilot.Name}");
 				}
 
 				gm.LaunchMission();
@@ -689,131 +730,61 @@ namespace AceManager.UI
 
 		private void OnMapInput(InputEvent @event)
 		{
+			// Handle clicking to set target
 			if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
 			{
+				// We use input controller for drag, but if we just click, we want to set target.
+				// MapInputController consumes input? 
+				// Only "SetInputAsHandled" if it's a drag.
+				// For a simple click, maybe MapInputController doesn't consume it if it's not a drag.
+				// But OnMapInput is connected to GuiInput.
+				// We'll calculate world pos and set target.
+
+				// If dragging, we assume _isDragging in controller prevents this if we check carefully.
+				// But for now, let's just allow clicking ANYWHERE to set target (unless it's a drag start?)
+
 				Vector2 mapPos = mb.Position;
-				Vector2 homeWorldPos = GetHomeWorldPos();
 				Vector2 center = _flightMapArea.Size / 2;
+				Vector2 homeWorldPos = _routePlanner.HomeWorldPos;
 
-				// Map to World: world = origin + (screen - center) / scale
-				Vector2 worldPos = homeWorldPos + (mapPos - center) / _briefingMapScale;
+				// We need to ask Renderer for visual->world conversion? 
+				// Renderer helper:
+				// screen = center + (world - currentOrigin) * scale
+				// world = (screen - center) / scale + currentOrigin
 
-				_manualTargetPos = worldPos;
-				_manualTargetName = "Manual Target";
+				Vector2 currentOrigin = homeWorldPos + _renderer.ViewOffset;
+				Vector2 worldPos = (mapPos - center) / _renderer.MapScale + currentOrigin;
 
-				// Update slider to match distance (World Distance is in KM since scale is 1 unit = 1 KM)
-				float distKm = (worldPos - homeWorldPos).Length();
-				int distClamped = (int)Math.Clamp(distKm, 10, 150);
+				// Update Planner
+				_routePlanner.SetTarget(worldPos, "Manual Target");
 
-				// Snap to step 5
-				distClamped = (int)(Math.Round(distClamped / 5.0) * 5);
-
-				_distanceSlider.Value = distClamped;
-				// Label updates automatically via ValueChanged signal
-
-				UpdateMapPreview();
+				// Update Slider to match
+				// Planner already updated internal distance, but we need to update UI slider without triggering loop
+				_distanceSlider.SetValueNoSignal(_routePlanner.DistanceKM);
+				_distanceValue.Text = $"{_routePlanner.DistanceKM} km";
 			}
+			// Let InputController handle the rest (pan/zoom) via its own connection (Wait, I passed _flightMapArea to InputController, it connected itself)
 		}
 
-		private void UpdateMapPreview()
+		private void UpdateMapVisuals()
 		{
-			if (!_isReady || _flightMapArea == null) return;
+			if (_renderer == null || _routePlanner == null) return;
 
-			Vector2 areaSize = _flightMapArea.Size;
-			if (areaSize.X < 10) return;
-			Vector2 center = areaSize / 2;
+			_renderer.UpdateVisuals(_routePlanner.Waypoints);
 
-			Vector2 homeWorldPos = GetHomeWorldPos();
-			Vector2 targetPos = _manualTargetPos ?? MapData.GenerateProceduralTarget(homeWorldPos, (int)_distanceSlider.Value, GameManager.Instance.SelectedNation);
-
-			var waypoints = MapData.GenerateWaypoints(homeWorldPos, targetPos, (int)_distanceSlider.Value);
-
-			_departureLine.ClearPoints();
-			_returnLine.ClearPoints();
-
-			// Departure: Start to segment before last
-			for (int i = 0; i < waypoints.Count - 1; i++)
+			if (_targetMarker != null)
 			{
-				_departureLine.AddPoint(center + (waypoints[i] - homeWorldPos) * _briefingMapScale);
+				_targetMarker.Position = _renderer.GetVisualPosition(_routePlanner.GetTargetPosition());
+				_targetMarker.Visible = true;
+				if (_targetLabel != null)
+					_targetLabel.Position = _targetMarker.Position + new Vector2(-50, 10);
 			}
-
-			// Return: Last segment back to home
-			if (waypoints.Count >= 2)
-			{
-				_returnLine.AddPoint(center + (waypoints[waypoints.Count - 2] - homeWorldPos) * _briefingMapScale);
-				_returnLine.AddPoint(center + (waypoints[waypoints.Count - 1] - homeWorldPos) * _briefingMapScale);
-			}
-
-			UpdateMapMarkers(homeWorldPos, targetPos, center);
 
 			// Notify central map
 			var godotWaypoints = new Godot.Collections.Array<Vector2>();
-			foreach (var wp in waypoints) godotWaypoints.Add(wp);
+			if (_routePlanner.Waypoints != null)
+				foreach (var wp in _routePlanner.Waypoints) godotWaypoints.Add(wp);
 			EmitSignal(SignalName.MissionSettingsChanged, godotWaypoints);
-		}
-
-		private void UpdateMapMarkers(Vector2 homeWorldPos, Vector2 targetPos, Vector2 center)
-		{
-			foreach (Node child in _mapMarkerContainer.GetChildren()) child.QueueFree();
-
-			var homeMarker = CreateMapMarker("HOME", Colors.Green);
-			homeMarker.Position = center;
-			_mapMarkerContainer.AddChild(homeMarker);
-
-			var targetMarker = CreateMapMarker("TARGET", Colors.Red);
-			targetMarker.Position = center + (targetPos - homeWorldPos) * _briefingMapScale;
-			_mapMarkerContainer.AddChild(targetMarker);
-
-			_targetLabel.Text = _manualTargetName != "" ? _manualTargetName : "PRIMARY OBJECTIVE";
-			_targetLabel.Position = targetMarker.Position + new Vector2(-50, 10);
-			_targetLabel.Size = new Vector2(100, 20);
-
-			if (GameManager.Instance.SectorMap != null)
-			{
-				foreach (var loc in GameManager.Instance.SectorMap.GetDiscoveredLocations())
-				{
-					if (loc.Id == "home_base") continue;
-
-					Vector2 screenPos = center + (loc.WorldCoordinates - homeWorldPos) * _briefingMapScale;
-					if (screenPos.X > 0 && screenPos.X < _flightMapArea.Size.X && screenPos.Y > 0 && screenPos.Y < _flightMapArea.Size.Y)
-					{
-						var marker = CreateMapMarker(loc.Name, Colors.LightBlue, 6);
-						marker.Position = screenPos;
-						_mapMarkerContainer.AddChild(marker);
-					}
-				}
-			}
-		}
-
-		private Control CreateMapMarker(string labelText, Color color, int size = 10)
-		{
-			var marker = new Control();
-			var dot = new ColorRect
-			{
-				Size = new Vector2(size, size),
-				Position = new Vector2(-size / 2, -size / 2),
-				Color = color
-			};
-			marker.AddChild(dot);
-
-			if (!string.IsNullOrEmpty(labelText))
-			{
-				var lbl = new Label
-				{
-					Text = labelText,
-					Position = new Vector2(size, -size),
-					Size = new Vector2(100, 20)
-				};
-				lbl.AddThemeFontSizeOverride("font_size", 8);
-				marker.AddChild(lbl);
-			}
-			return marker;
-		}
-
-		private Vector2 GetHomeWorldPos()
-		{
-			var homeLoc = GameManager.Instance.SectorMap?.Locations.FirstOrDefault(l => l.Id == "home_base");
-			return homeLoc?.WorldCoordinates ?? Vector2.Zero;
 		}
 	}
 }
