@@ -259,6 +259,48 @@ namespace AceManager.Core
             EmitSignal(SignalName.MissionCompleted);
         }
 
+        public void CompleteTraining(TrainingSession session)
+        {
+            if (MissionCompletedToday) return;
+
+            var roster = Roster.Roster;
+            var lesson = TrainingLesson.GetAll().Find(l => l.Type == session.LessonType);
+            if (lesson == null) return;
+
+            CrewData coInstructor = roster.FirstOrDefault(p => p.Name == session.CoInstructorPilotId);
+            float baseXP = session.CalculateBaseXP(CurrentBase.TrainingFacilitiesRating);
+            float instructorBonus = session.GetInstructorBonus(coInstructor);
+
+            var attendeeNames = session.AttendeePilotIds.ToHashSet();
+
+            foreach (var pilot in roster)
+            {
+                if (pilot.Status == PilotStatus.KIA) continue;
+
+                if (attendeeNames.Contains(pilot.Name))
+                {
+                    // Attendees get XP
+                    foreach (var stat in lesson.PrimaryStats)
+                    {
+                        pilot.AddImprovement(stat, baseXP * instructorBonus);
+                    }
+                    // Small fatigue recovery bonus (they are working, but it's safe)
+                    pilot.Fatigue = Math.Max(0, pilot.Fatigue - 5);
+                }
+                else
+                {
+                    // Skippers get NO XP but MORE fatigue recovery
+                    pilot.Fatigue = Math.Max(0, pilot.Fatigue - 15);
+                }
+
+                pilot.ApplyDailyImprovements();
+            }
+
+            MissionCompletedToday = true;
+            EmitSignal(SignalName.MissionCompleted); // Trigger UI refresh (buttons etc)
+            GD.Print($"Training session [{lesson.Name}] complete.");
+        }
+
         private void ProcessMissionResults()
         {
             // Discover target location if successful

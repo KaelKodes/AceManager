@@ -172,3 +172,13 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 text = "LAUNCH MISSION"
+
+[node name="Spacer2" type="Control" parent="MarginContainer/VBoxContainer/ButtonRow"]
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+
+[node name="TrainingButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 50)
+layout_mode = 2
+text = "TRAINING"

@@ -19,6 +19,7 @@ namespace AceManager.UI
 		private Label _flightLeaderLabel;
 		private Button _cancelButton;
 		private Button _launchButton;
+		private Button _trainingButton;
 
 		private List<FlightAssignment> _pendingAssignments = new List<FlightAssignment>();
 		private List<AircraftInstance> _availableAircraft = new List<AircraftInstance>();
@@ -48,6 +49,7 @@ namespace AceManager.UI
 		private FlightAssignment _tempAssignment = null;
 
 		[Signal] public delegate void PanelClosedEventHandler();
+		[Signal] public delegate void TrainingRequestedEventHandler();
 		[Signal] public delegate void MissionSettingsChangedEventHandler(Godot.Collections.Array<Vector2> waypoints);
 
 		public override void _Ready()
@@ -70,6 +72,7 @@ namespace AceManager.UI
 			_flightLeaderLabel = GetNode<Label>("%FlightLeaderLabel");
 			_cancelButton = GetNode<Button>("%CancelButton");
 			_launchButton = GetNode<Button>("%LaunchButton");
+			_trainingButton = GetNode<Button>("%TrainingButton");
 			_flightMapArea = GetNode<Control>("%FlightMapArea");
 
 			SetupMapNodes();
@@ -186,15 +189,51 @@ namespace AceManager.UI
 			if (_tempAssignment?.Pilot != null) assignedPilots.Add(_tempAssignment.Pilot);
 			if (_tempAssignment?.Gunner != null) assignedGunners.Add(_tempAssignment.Gunner);
 
-			foreach (var pilot in _availablePilots)
-			{
-				if (assignedPilots.Contains(pilot) || assignedGunners.Contains(pilot)) continue;
+			var available = _availablePilots
+				.Where(p => !assignedPilots.Contains(p) && !assignedGunners.Contains(p))
+				.OrderByDescending(p => GetPilotMissionScore(p))
+				.ToList();
 
+			foreach (var pilot in available)
+			{
 				string stats = GetPilotListStats(pilot);
 				string info = $"{pilot.Name} {stats}";
 				_pilotList.AddItem(info);
 				_pilotList.SetItemMetadata(_pilotList.ItemCount - 1, pilot.Name);
 			}
+		}
+
+		private float GetPilotMissionScore(CrewData pilot)
+		{
+			var type = (MissionType)_typeOption.Selected;
+
+			if (_currentMode == SelectionMode.PickPilot)
+			{
+				return type switch
+				{
+					MissionType.Patrol or MissionType.Interception or MissionType.Escort =>
+						pilot.GUN + pilot.CTL + pilot.OA,
+					MissionType.Reconnaissance =>
+						pilot.CTL + pilot.DA + pilot.STA,
+					MissionType.Bombing or MissionType.Strafing =>
+						pilot.GUN + pilot.CTL + pilot.DIS,
+					_ => pilot.GetDogfightRating()
+				};
+			}
+			else if (_currentMode == SelectionMode.PickObserver)
+			{
+				return type switch
+				{
+					MissionType.Patrol or MissionType.Interception or MissionType.Escort =>
+						pilot.GUN + pilot.DA + pilot.RFX,
+					MissionType.Reconnaissance =>
+						pilot.OA + pilot.TA + pilot.DIS,
+					MissionType.Bombing or MissionType.Strafing =>
+						pilot.OA + pilot.DIS + pilot.TA,
+					_ => pilot.GUN
+				};
+			}
+			return 0;
 		}
 
 		private string GetPilotListStats(CrewData pilot)
@@ -278,6 +317,7 @@ namespace AceManager.UI
 
 			_cancelButton.Pressed += OnCancelPressed;
 			_launchButton.Pressed += OnLaunchPressed;
+			_trainingButton.Pressed += OnTrainingPressed;
 
 			// Optional skip for observer seat
 			_flightLeaderLabel.GuiInput += (ev) =>
@@ -507,6 +547,7 @@ namespace AceManager.UI
 			}
 
 			_launchButton.Text = isGrounded ? "CONDUCT TRAINING" : "LAUNCH MISSION";
+			_trainingButton.Visible = !isGrounded;
 		}
 
 		private void OnAssignmentClicked(int index)
@@ -576,6 +617,12 @@ namespace AceManager.UI
 
 			string gridRef = GridSystem.WorldToGrid(targetPos, GameManager.Instance.SectorMap);
 			_costPreview.Text = $"Flights: {flightCount} | Crew: {crewCount} | Fuel: ~{baseFuel} | Ammo: ~{baseAmmo} | Sector: {gridRef}";
+		}
+
+		private void OnTrainingPressed()
+		{
+			EmitSignal(SignalName.TrainingRequested);
+			OnCancelPressed();
 		}
 
 		private void OnCancelPressed()

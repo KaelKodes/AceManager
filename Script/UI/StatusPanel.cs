@@ -30,6 +30,7 @@ namespace AceManager.UI
         private Control _briefingPanel;
         private Control _commandMapPanel;
         private Control _rosterPanel;
+        private Control _trainingPanel;
 
         private PackedScene _planningPanelScene;
         private PackedScene _resultPanelScene;
@@ -230,7 +231,7 @@ namespace AceManager.UI
             var briefing = gm.TodaysBriefing;
             if (briefing != null && briefing.IsFlightGrounded())
             {
-                GD.Print("Cannot launch missions - weather conditions prevent flight.");
+                ShowTraining();
                 return;
             }
 
@@ -239,6 +240,7 @@ namespace AceManager.UI
                 _missionPlanningPanel = _planningPanelScene.Instantiate<Control>();
                 AddChild(_missionPlanningPanel);
                 _missionPlanningPanel.Connect("PanelClosed", Callable.From(OnPlanningPanelClosed));
+                _missionPlanningPanel.Connect("TrainingRequested", Callable.From(ShowTraining));
 
                 var planning = _missionPlanningPanel as MissionPlanningPanel;
                 planning?.Connect(MissionPlanningPanel.SignalName.MissionSettingsChanged,
@@ -264,6 +266,43 @@ namespace AceManager.UI
         private void OnPlanningPanelClosed()
         {
             // Panel hides itself
+        }
+
+        private void ShowTraining()
+        {
+            if (!GodotObject.IsInstanceValid(_trainingPanel))
+            {
+                _trainingPanel = new TrainingPanel();
+                _trainingPanel.Name = "TrainingPanel";
+                AddChild(_trainingPanel);
+                _trainingPanel.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+                _trainingPanel.Connect("PanelClosed", Callable.From(() => SetOverlayUIVisible(true)));
+            }
+
+            SetOverlayUIVisible(false);
+            _trainingPanel.Show();
+        }
+
+        private void SetOverlayUIVisible(bool visible)
+        {
+            // Hide everything except map and date
+            _baseNameLabel.Visible = visible;
+            _fuelLabel.Visible = visible;
+            _ammoLabel.Visible = visible;
+            _pilotsLabel.Visible = visible;
+            _aircraftLabel.Visible = visible;
+            _captainNameLabel.Visible = visible;
+            _captainRankLabel.Visible = visible;
+            _captainMeritLabel.Visible = visible;
+            _ratingsContainer.Visible = visible;
+            _advanceButton.Visible = visible;
+            _planMissionButton.Visible = visible;
+            _viewBriefingButton.Visible = visible;
+            _viewDebriefButton.Visible = visible;
+            _viewRosterButton.Visible = visible;
+
+            // Date stays visible as requested
+            _dateLabel.Visible = true;
         }
 
         private void OnMissionCompleted()
