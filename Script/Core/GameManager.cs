@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AceManager.Core.Strategy;
 
 namespace AceManager.Core
 {
@@ -190,6 +191,13 @@ namespace AceManager.Core
             }
 
             MissionCompletedToday = false;
+
+            // --- Strategic Simulation ---
+            if (SectorMap != null)
+            {
+                StrategicSim.ProcessTurn(SectorMap);
+            }
+            // ----------------------------
 
             EmitSignal(SignalName.DayAdvanced);
             EmitSignal(SignalName.BriefingReady);

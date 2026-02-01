@@ -1,0 +1,167 @@
+WWI STRATEGIC INDUSTRY & TARGET SYSTEM
+-------------------------------------
+
+This document defines a shared set of industrial, logistical, and military
+infrastructure nodes present on all sides during WWI. These structures are
+not owned by the player, but directly affect airfield operations, mission
+availability, supply flow, and strategic pressure.
+
+The player’s airfield is one node within this larger war economy.
+
+==================================================
+1. INDUSTRIAL PRODUCTION TARGETS
+(Rear-area, high-value, limited redundancy)
+==================================================
+
+1.1 Munitions Works
+- Produces artillery shells, bombs, and small-arms ammunition
+- Strategic Importance:
+  - Enables sustained ground offensives
+  - Directly impacts artillery and bombing availability
+- Gameplay Impact:
+  - Reduced shell supply
+  - Slower offensive tempo
+  - Increased enemy shortages
+
+----------------------------------
+
+1.2 Steel & Metal Works
+- Produces gun barrels, aircraft frames, vehicles, and rail material
+- Strategic Importance:
+  - Backbone of heavy industry
+  - Long-term war sustainability
+- Gameplay Impact:
+  - Slower aircraft replacement
+  - Reduced heavy weapon repair
+  - Long recovery time if damaged
+
+----------------------------------
+
+1.3 Chemical Plants
+- Produces explosives, propellants, gas agents, and fertilizers
+- Strategic Importance:
+  - Dual-use civilian and military production
+  - Critical under blockade conditions
+- Gameplay Impact:
+  - Reduced bomb and shell output
+  - Reduced gas warfare capability
+  - Possible morale or political effects
+
+==================================================
+2. LOGISTICS & TRANSPORT TARGETS
+(Closer to the front, high frequency, cascading effects)
+==================================================
+
+2.1 Rail Hubs & Marshalling Yards
+- Move troops, aircraft, fuel, ammunition, and supplies
+- Strategic Importance:
+  - Primary arteries of the war
+- Gameplay Impact:
+  - Delays reinforcements
+  - Slower resupply to airfields
+  - Widespread operational penalties
+
+----------------------------------
+
+2.2 Supply Depots
+- Store fuel, ammunition, food, and spare parts
+- Strategic Importance:
+  - Local sustainment nodes
+- Gameplay Impact:
+  - Temporary shortages
+  - Reduced sortie rates
+  - Faster recovery than factories, but frequent targets
+
+----------------------------------
+
+2.3 Ports & River Terminals
+- Handle overseas and inland bulk transport
+- Strategic Importance:
+  - Critical for coal, raw materials, and imports
+- Gameplay Impact:
+  - Strategic bottlenecks
+  - Especially impactful for maritime-dependent nations
+
+==================================================
+3. AIR & MILITARY SUPPORT TARGETS
+(Directly tied to air power)
+==================================================
+
+3.1 Airfields
+- Contain aircraft, pilots, fuel, and maintenance crews
+- Strategic Importance:
+  - Enables enemy air operations
+- Gameplay Impact:
+  - Reduced enemy sortie rate
+  - Aircraft destroyed on the ground
+  - Pilot casualties outside air combat
+
+----------------------------------
+
+3.2 Aircraft Factories & Engine Works
+- Produce fighters, bombers, recon aircraft, and engines
+- Strategic Importance:
+  - Determines air superiority over time
+- Gameplay Impact:
+  - Slower aircraft replacement
+  - Forced use of outdated models
+  - Technology race pressure
+
+----------------------------------
+
+3.3 Training Fields & Schools
+- Train pilots, observers, gunners, and mechanics
+- Strategic Importance:
+  - Pilot quality and survivability
+- Gameplay Impact:
+  - Lower skill replacements
+  - Higher crash and loss rates
+  - Direct interaction with Training systems
+
+==================================================
+4. COMMAND, INTELLIGENCE & MORALE TARGETS
+(Soft targets with systemic effects)
+==================================================
+
+4.1 Headquarters & Command Centers
+- Coordinate operations and planning
+- Strategic Importance:
+  - Centralized decision-making
+- Gameplay Impact:
+  - Slower enemy reactions
+  - Poor coordination
+  - Temporary chaos effects
+
+----------------------------------
+
+4.2 Communications Nodes
+- Telegraph stations, signal towers, relay hubs
+- Strategic Importance:
+  - Information flow and responsiveness
+- Gameplay Impact:
+  - Delayed interceptions
+  - Reduced coordination
+  - Increased fog-of-war effects
+
+----------------------------------
+
+4.3 Civil / Morale Targets (Limited Use)
+- Industrial towns, worker housing, power infrastructure
+- Strategic Importance:
+  - National morale and political pressure
+- Gameplay Impact:
+  - Morale shifts
+  - Escalation consequences
+  - Potential retaliation events
+
+==================================================
+DESIGN PRINCIPLES
+==================================================
+
+- All sides use the same target categories
+- The player does not own most infrastructure
+- Damage affects flow, not just output
+- Air superiority shapes industrial survival
+- The Western Front functions as a logistics web, not a factory zone
+
+End of Document

@@ -1,0 +1,147 @@
+ACE MANAGER – COMMANDING OFFICER (CO) STAT SYSTEM
+================================================
+
+ROLE OVERVIEW
+-------------
+The Commanding Officer (CO) represents the player’s influence over the airbase.
+The CO is not a combat unit and does not participate in missions directly.
+
+The CO functions as a force multiplier through:
+- Training and pilot development
+- Morale and leadership
+- Base logistics and efficiency
+- Strategic and intelligence oversight
+
+CO stats affect systems and outcomes, not raw pilot combat values.
+
+
+STAT CATEGORIES
+---------------
+
+1. TRAINING & DEVELOPMENT
+2. COMMAND & MORALE
+3. LOGISTICS & OPERATIONS
+4. INTELLIGENCE & STRATEGY
+
+
+------------------------------------------------
+1. TRAINING & DEVELOPMENT
+------------------------------------------------
+
+Training is conducted by:
+- The CO
+- One selected pilot acting as assistant trainer
+
+CO stats directly influence training outcomes.
+
+Training Skill
+- Increases XP gained during training sessions
+- Reduces risk of training failure or pilot injury
+- Improves overall training efficiency
+
+Instruction Focus
+- Determines how targeted training can be
+- Low values favor broad, safe stat improvements
+- High values allow focused training on specific stats or roles
+- High focus increases risk but improves results
+
+Mentorship Synergy
+- Governs how effectively the CO works with the assistant pilot
+- High synergy improves training when the assistant pilot is skilled
+- Low synergy causes diminishing returns from assistant contribution
+
+
+------------------------------------------------
+2. COMMAND & MORALE
+------------------------------------------------
+
+These stats affect pilots psychologically and socially.
+
+Leadership
+- Increases base-wide morale recovery
+- Reduces morale loss from pilot injury, death, or mission failure
+- Improves long-term pilot retention
+
+Authority
+- Determines how much strain pilots can endure
+- Higher authority allows:
+  - More intense training
+  - Longer or riskier missions
+- Low authority forces conservative operations
+
+Reputation
+- Represents how the CO is perceived externally
+- Affects:
+  - Quality of incoming pilots
+  - Access to special opportunities or assets
+  - Command tolerance for failures
+
+
+------------------------------------------------
+3. LOGISTICS & OPERATIONS
+------------------------------------------------
+
+These stats affect time, resources, and base throughput.
+
+Operational Efficiency
+- Reduces:
+  - Repair time
+  - Training cooldowns
+  - Aircraft turnaround time
+- Slightly improves fuel and supply usage
+
+Resource Management
+- Reduces waste from rushed repairs or emergency launches
+- Improves effectiveness of limited resources
+- Mitigates penalties during shortages
+
+Base Organization
+- Increases effective capacity of the base
+- Enables:
+  - More squads
+  - More pilots
+  - More simultaneous activities
+- Acts as a soft cap modifier, not a hard unlock
+
+
+------------------------------------------------
+4. INTELLIGENCE & STRATEGY
+------------------------------------------------
+
+These stats influence information quality and long-term planning.
+
+Tactical Insight
+- Improves mission previews and forecasts
+- Reduces unknown variables before sorties
+- Helps pilots select better default tactics
+
+Enemy Assessment
+- Speeds identification of enemy roles and ace pilots
+- Reduces surprise penalties in combat
+
+Strategic Planning
+- Improves long-term campaign outcomes
+- Reduces chance of catastrophic failures
+- Improves mission chain quality and pacing
+
+
+------------------------------------------------
+CO PROGRESSION
+------------------------------------------------
+
+CO stats improve through:
+- Campaign milestones
+- Major decisions
+- Long-term success or failure trends
+
+CO stats do NOT increase through direct mission grinding.
+
+Progression is slow, meaningful, and capped by campaign phase.
+
+
+DESIGN PRINCIPLES
+-----------------
+- CO provides system-level influence, not raw combat bonuses
+- No flat stat auras to pilots
+- Emphasis on choice, risk, and long-term planning
+- CO power comes from decisions, not micromanagement

@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AceManager.Core.Strategy;
 
 namespace AceManager.Core
 {
@@ -49,6 +50,12 @@ namespace AceManager.Core
 
         // Front line segments as coordinate pairs
         [Export] public Vector2[] FrontLinePoints { get; set; }
+
+        // --- Strategic World Data ---
+        [Export] public Godot.Collections.Array<StrategicNode> StrategicNodes { get; set; } = new Godot.Collections.Array<StrategicNode>();
+        [Export] public Godot.Collections.Array<SupplyLine> SupplyLines { get; set; } = new Godot.Collections.Array<SupplyLine>();
+        [Export] public Godot.Collections.Array<FrontlineSegment> FrontlineSegments { get; set; } = new Godot.Collections.Array<FrontlineSegment>();
+        // -----------------------------
 
         // Sector bounds
         [Export] public Vector2 SectorMin { get; set; }
@@ -192,6 +199,9 @@ namespace AceManager.Core
 
             // 4. Add procedural points of interest (Towns, Bridges, Factories)
             GeneratePointsOfInterest(map, homeBase);
+
+            // 5. Generate Strategic World (Nodes, Supply Lines)
+            StrategicWorldGenerator.GenerateSector(map, homeBase);
 
             return map;
         }
