@@ -320,9 +320,10 @@ namespace AceManager.UI
             Vector2 center = _mapArea.Size / 2;
             Vector2 currentOrigin = homeWorldPos + _viewOffset;
 
-            // Screen to World
+            // Screen to World (This worldPos is already Tactical if the map image is calibrated)
             Vector2 worldPos = currentOrigin + (mousePos - center) / _mapScale;
-            string gridRef = GridSystem.WorldToGrid(worldPos, _mapData);
+            // Pass null to WorldToGrid to avoid double-calibration
+            string gridRef = GridSystem.WorldToGrid(worldPos, null);
             _coordLabel.Text = gridRef;
             _coordLabel.Position = mousePos + new Vector2(15, 15);
         }
@@ -527,9 +528,14 @@ namespace AceManager.UI
                 Vector2 p2 = center + (new Vector2(drawMaxX, y) - currentOrigin) * _mapScale;
                 _gridLayer.DrawLine(p1, p2, gridColor, 1.0f);
 
-                // Row Label (Show at the left of the visible map area)
-                string rowName = (rowIdx + 1).ToString();
-                _gridLayer.DrawString(ThemeDB.FallbackFont, p1 + new Vector2(5, -5), rowName, HorizontalAlignment.Left, -1, 10, labelColor);
+                // Center Row Number in its sector
+                float labelTacY = y + GridSystem.GridSizeKM / 2;
+                if (labelTacY <= _worldMaxKM.Y)
+                {
+                    Vector2 labelPos = center + (new Vector2(drawMinX, labelTacY) - currentOrigin) * _mapScale;
+                    string rowName = (rowIdx + 1).ToString();
+                    _gridLayer.DrawString(ThemeDB.FallbackFont, labelPos + new Vector2(5, 5), rowName, HorizontalAlignment.Left, -1, 10, labelColor);
+                }
             }
         }
 
