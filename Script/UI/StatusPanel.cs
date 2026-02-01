@@ -83,6 +83,7 @@ namespace AceManager.UI
             GameManager.Instance.DayAdvanced += OnDayAdvanced;
             GameManager.Instance.MissionCompleted += OnMissionCompleted;
             GameManager.Instance.BriefingReady += OnBriefingReady;
+            GameManager.Instance.CampaignIntroRequested += OnCampaignIntroRequested;
 
             // Check if we need to pick a nation (Campaign Start)
             if (string.IsNullOrEmpty(GameManager.Instance.SelectedNation))
@@ -124,6 +125,13 @@ namespace AceManager.UI
                 UpdateBriefingButtonStates();
                 RefreshMap();
             };
+        }
+
+        private void OnCampaignIntroRequested(string nation)
+        {
+            var intro = new IntroductionPanel();
+            AddChild(intro);
+            intro.Setup(nation);
         }
 
         private void RefreshMap()

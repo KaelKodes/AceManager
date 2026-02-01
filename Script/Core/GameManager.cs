@@ -43,10 +43,12 @@ namespace AceManager.Core
             AircraftLibrary = DataLoader.LoadAllAircraft();
         }
 
+        [Signal] public delegate void CampaignIntroRequestedEventHandler(string nation);
+
         public void StartCampaign(string nation)
         {
             SelectedNation = nation;
-            GD.Print($"Starting new campaign for {nation}...");
+            GD.Print($"Campaign start requested for {nation}...");
 
             // Set historical starting date
             CurrentDate = nation switch
@@ -58,6 +60,13 @@ namespace AceManager.Core
                 _ => new DateTime(1914, 8, 1)
             };
 
+            EmitSignal(SignalName.CampaignIntroRequested, nation);
+        }
+
+        public void FinalizeCampaignStart(string captainName)
+        {
+            GD.Print($"Finalizing campaign start for {SelectedNation} with Captain {captainName}...");
+            PlayerCaptain = new CaptainData { Name = captainName };
             InitializeSession();
         }
 
@@ -97,7 +106,6 @@ namespace AceManager.Core
                 SectorMap = MapData.GenerateHistoricalMap(CurrentBase);
             }
 
-            PlayerCaptain = new CaptainData();
             EmitSignal(SignalName.DayAdvanced); // Trigger initial UI refresh
         }
 
