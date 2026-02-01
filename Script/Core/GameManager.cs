@@ -54,7 +54,6 @@ namespace AceManager.Core
                 "Britain" => new DateTime(1914, 8, 13), // RFC deployment to France
                 "France" => new DateTime(1914, 8, 3),   // French entry into WWI
                 "Germany" => new DateTime(1914, 8, 1),  // Mobilization
-                "Italy" => new DateTime(1915, 5, 23),    // Italian entry (May 1915)
                 "USA" => new DateTime(1917, 4, 6),      // US Declaration of War
                 _ => new DateTime(1914, 8, 1)
             };

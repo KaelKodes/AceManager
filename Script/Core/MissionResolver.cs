@@ -163,11 +163,11 @@ namespace AceManager.Core
 
             int contactChance = mission.Type switch
             {
-                MissionType.Patrol => 40 + (mission.TargetDistance * 3),
-                MissionType.Interception => 70 + (mission.TargetDistance * 2),
-                MissionType.Escort => 50 + (mission.TargetDistance * 4),
-                MissionType.Reconnaissance => 30 + (mission.TargetDistance * 5),
-                MissionType.Bombing => 60 + (mission.TargetDistance * 5),
+                MissionType.Patrol => 40 + (int)(mission.TargetDistance * 0.3f),
+                MissionType.Interception => 60 + (int)(mission.TargetDistance * 0.2f),
+                MissionType.Escort => 50 + (int)(mission.TargetDistance * 0.4f),
+                MissionType.Reconnaissance => 30 + (int)(mission.TargetDistance * 0.5f),
+                MissionType.Bombing => 50 + (int)(mission.TargetDistance * 0.5f),
                 _ => 50
             };
 
@@ -348,7 +348,7 @@ namespace AceManager.Core
 
         private static float CalculateEnemyEffectiveness(MissionData mission, int contactIntensity, string specialEvent)
         {
-            float baseEnemy = 5 + (mission.TargetDistance * 2);
+            float baseEnemy = 5 + (mission.TargetDistance * 0.2f);
             baseEnemy *= Math.Max(contactIntensity, 1);
 
             if (specialEvent == "AceEncounter") baseEnemy *= 2.5f;

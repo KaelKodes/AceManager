@@ -45,12 +45,13 @@ theme_override_constants/margin_bottom = 20
 
 [node name="Header" type="HBoxContainer" parent="MarginContainer" unique_id=2102084652]
 layout_mode = 2
-size_flags_horizontal = 0
+size_flags_horizontal = 4
 size_flags_vertical = 0
 
 [node name="DateLabel" type="Label" parent="MarginContainer/Header" unique_id=2098480147]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 24
 text = "Aug 13, 1914"
 
@@ -61,12 +62,13 @@ size_flags_horizontal = 3
 [node name="RatingsPanel" type="VBoxContainer" parent="MarginContainer" unique_id=542914217]
 layout_mode = 2
 size_flags_horizontal = 0
-size_flags_vertical = 4
+size_flags_vertical = 0
 
 [node name="Label" type="Label" parent="MarginContainer/RatingsPanel" unique_id=57998680]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Base Ratings"
+horizontal_alignment = 1
 
 [node name="RatingsContainer" type="GridContainer" parent="MarginContainer/RatingsPanel" unique_id=804691597]
 unique_name_in_owner = true

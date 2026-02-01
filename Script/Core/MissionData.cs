@@ -113,14 +113,15 @@ namespace AceManager.Core
         // Mission duration estimates (in minutes, for flavor)
         public int GetEstimatedDuration()
         {
+            // Base time (takeoff/landing/form-up) + Travel Time (approx 150km/h = 2.5km/min) + Loiter
             return Type switch
             {
-                MissionType.Patrol => 30 + (TargetDistance * 5),
-                MissionType.Interception => 45 + (TargetDistance * 8),
-                MissionType.Escort => 60 + (TargetDistance * 10),
-                MissionType.Reconnaissance => 60 + (TargetDistance * 15),
-                MissionType.Bombing => 120 + (TargetDistance * 20),
-                MissionType.Strafing => 90 + (TargetDistance * 12),
+                MissionType.Patrol => 30 + (int)(TargetDistance * 0.5f),
+                MissionType.Interception => 20 + (int)(TargetDistance * 0.4f),
+                MissionType.Escort => 30 + (int)(TargetDistance * 0.6f),
+                MissionType.Reconnaissance => 40 + (int)(TargetDistance * 0.8f),
+                MissionType.Bombing => 60 + (int)(TargetDistance * 1.0f), // Heavy load, slower
+                MissionType.Strafing => 45 + (int)(TargetDistance * 0.7f),
                 _ => 60
             };
         }
@@ -133,7 +134,9 @@ namespace AceManager.Core
             {
                 if (assignment.Aircraft?.Definition != null)
                 {
-                    baseCost += assignment.Aircraft.Definition.FuelConsumptionRange * TargetDistance * 5;
+                    // Fuel consumption scaled for KM (previously Distance * 5 where Dist was 1-10)
+                    // New Dist is 10-150. Old Max was 10*5 = 50 factor. New Max 150*0.33 = 50 factor.
+                    baseCost += (int)(assignment.Aircraft.Definition.FuelConsumptionRange * TargetDistance * 0.5f);
                 }
             }
             return Math.Max(baseCost, 10); // Minimum fuel cost

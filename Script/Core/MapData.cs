@@ -111,6 +111,7 @@ namespace AceManager.Core
 
             // 2. Load all other airbases from Database
             var allBases = DataLoader.LoadAirbaseDatabase();
+            GD.Print($"[MapData] Loaded {allBases.Count} airbases from database.");
             var nearbyAllied = new List<(MapLocation Location, float Distance)>();
 
             foreach (var b in allBases)
@@ -125,17 +126,21 @@ namespace AceManager.Core
                 // Safety: Skip invalid/unparsed coordinates
                 if (b.Coordinates.Length() < 0.01f) continue;
 
-                float dist = (worldPos - homeWorldPos).Length();
-                if (dist < 60)
-                {
-                    bool isAllied = (b.Nation == homeBase.Nation) || (homeBase.Nation != "Germany" && b.Nation != "Germany");
-                    var type = isAllied ? MapLocation.LocationType.AlliedBase : MapLocation.LocationType.EnemyAirfield;
+                // Filter out obviously remote theatres (e.g. Italy/Palestine) based on Latitude
+                // Keep Western Front (Lat > 48.0 approx)
+                if (b.Coordinates.Y < 48.0f) continue;
 
-                    var loc = AddLocation(map, $"base_{b.Name.ToLower().Replace(" ", "_")}", b.Name, worldPos, type, b.Nation, false);
-                    if (isAllied && loc != null)
-                    {
-                        nearbyAllied.Add((loc, dist));
-                    }
+                // Load ALL Western Front bases for visual calibration
+                // (Removed the 'dist < 60' check)
+
+                bool isAllied = (b.Nation == homeBase.Nation) || (homeBase.Nation != "Germany" && b.Nation != "Germany");
+                var type = isAllied ? MapLocation.LocationType.AlliedBase : MapLocation.LocationType.EnemyAirfield;
+
+                // Add and Auto-Discover everything
+                var loc = AddLocation(map, $"base_{b.Name.ToLower().Replace(" ", "_")}", b.Name, worldPos, type, b.Nation, true);
+                if (isAllied && loc != null)
+                {
+                    nearbyAllied.Add((loc, (worldPos - homeWorldPos).Length()));
                 }
             }
 
@@ -154,16 +159,8 @@ namespace AceManager.Core
             }
 
             // 3. Define Historical Front Line (Approximation)
-            if (homeBase.Nation == "Italy")
-            {
-                // Italian Front (Isonzo/Piave approximate)
-                map.FrontLinePoints = GenerateItalianFront(homeBase.Coordinates, map);
-            }
-            else
-            {
-                // Western Front (approximate)
-                map.FrontLinePoints = GenerateWesternFront(homeBase.Coordinates, map);
-            }
+            // Focused on Western Front only for now
+            map.FrontLinePoints = GenerateWesternFront(homeBase.Coordinates, map);
 
             // 4. Add procedural points of interest (Towns, Bridges, Factories)
             GeneratePointsOfInterest(map, homeBase);
@@ -171,57 +168,40 @@ namespace AceManager.Core
             return map;
         }
 
-        public static Vector2 GenerateProceduralTarget(Vector2 startPos, int distance, string nation)
+        public static Vector2 GenerateProceduralTarget(Vector2 startPos, int distanceKM, string nation)
         {
             Random rng = new Random();
-            float range = distance * 10f;
+            float range = distanceKM; // Input is now directly in KM
 
-            // Basic logic: Enemy is generally East (+X) on Western Front, North (+Y) in Italy
-            bool isItaly = nation == "Italy";
-
-            float angle;
-            if (isItaly)
-            {
-                // North-ish. In our coordinate system, North is -Y.
-                angle = (float)(rng.NextDouble() * Math.PI) - (float)Math.PI;
-            }
-            else
-            {
-                // East-ish (Positive X)
-                angle = (float)(rng.NextDouble() * Math.PI / 2) - (float)(Math.PI / 4);
-            }
+            // Basic logic: Enemy is generally East (+X) on Western Front
+            float angle = (float)(rng.NextDouble() * Math.PI / 2) - (float)(Math.PI / 4);
 
             Vector2 targetOffset = new Vector2(
                 (float)Math.Cos(angle) * range,
                 (float)Math.Sin(angle) * range
             );
 
-            if (!isItaly)
-            {
-                targetOffset.X = Math.Abs(targetOffset.X); // Ensure East
-                targetOffset.Y = -Math.Abs(targetOffset.Y); // Ensure North-ish
-            }
-            else
-            {
-                targetOffset.Y = -Math.Abs(targetOffset.Y); // Ensure North
-            }
+            targetOffset.X = Math.Abs(targetOffset.X); // Ensure East
+            targetOffset.Y = -Math.Abs(targetOffset.Y); // Ensure North-ish
 
             return startPos + targetOffset;
         }
 
-        public static List<Vector2> GenerateWaypoints(Vector2 startPos, Vector2 targetPos, int distance)
+        public static List<Vector2> GenerateWaypoints(Vector2 startPos, Vector2 targetPos, int distanceKM)
         {
             var waypoints = new List<Vector2>();
             waypoints.Add(startPos);
 
-            // Add a "dogleg"
-            if (distance > 3)
+            // Add a "dogleg" if distance is significant (> 30km)
+            if (distanceKM > 30)
             {
                 Random rng = new Random();
                 Vector2 midPoint = (startPos + targetPos) / 2;
                 Vector2 targetOffset = targetPos - startPos;
                 Vector2 perpendicular = new Vector2(-targetOffset.Y, targetOffset.X).Normalized();
-                float offset = (float)(rng.NextDouble() - 0.5) * targetOffset.Length() * 0.3f;
+
+                // Dogleg offset relative to distance (smaller relative deviation for longer flights)
+                float offset = (float)(rng.NextDouble() - 0.5) * targetOffset.Length() * 0.25f;
                 waypoints.Add(midPoint + perpendicular * offset);
             }
 
@@ -256,13 +236,28 @@ namespace AceManager.Core
         private static Vector2[] GenerateWesternFront(Vector2 homeCoords, MapData map)
         {
             // Simplified Western Front line points (Lon, Lat)
+            // Accurate 1916 Trench Line (Final User Calibration)
             var points = new List<Vector2> {
-                new Vector2(2.5f, 51.2f), // Nieuwpoort
-                new Vector2(2.9f, 50.8f), // Ypres
-                new Vector2(2.8f, 50.4f), // Arras
-                new Vector2(3.2f, 49.8f), // St. Quentin
-                new Vector2(4.0f, 49.2f), // Reims
-                new Vector2(5.4f, 49.1f)  // Verdun
+                new Vector2(2.86f, 51.17f),
+                new Vector2(2.95f, 51.00f),
+                new Vector2(2.98f, 50.81f),
+                new Vector2(2.90f, 50.64f),
+                new Vector2(2.98f, 50.51f),
+                new Vector2(2.91f, 50.35f),
+                new Vector2(3.06f, 50.21f),
+                new Vector2(3.02f, 50.04f),
+                new Vector2(3.02f, 49.77f),
+                new Vector2(3.44f, 49.65f),
+                new Vector2(3.47f, 49.45f),
+                new Vector2(3.56f, 49.28f),
+                new Vector2(3.88f, 49.23f),
+                new Vector2(4.24f, 49.33f),
+                new Vector2(4.56f, 49.31f),
+                new Vector2(4.80f, 49.17f),
+                new Vector2(5.66f, 49.13f),
+                new Vector2(6.60f, 48.84f),
+                new Vector2(7.08f, 48.46f),
+                new Vector2(7.08f, 47.88f),
             };
 
             return points.Select(p => map.GetWorldCoordinates(p)).ToArray();
@@ -304,8 +299,8 @@ namespace AceManager.Core
                 Vector2 targetPos = mid + (normal * 15 * enemySideMultiplier) + (dir * (float)(rng.NextDouble() - 0.5) * 10);
                 AddLocation(map, $"bridge_{i}", "River Bridge", targetPos, MapLocation.LocationType.Bridge, "Enemy", false);
 
-                Vector2 townPos = mid - (normal * 20 * enemySideMultiplier) + (dir * (float)(rng.NextDouble() - 0.5) * 20);
-                AddLocation(map, $"town_{i}", "Frontline Town", townPos, MapLocation.LocationType.Town, homeBase.Nation, true);
+                // Vector2 townPos = mid - (normal * 20 * enemySideMultiplier) + (dir * (float)(rng.NextDouble() - 0.5) * 20);
+                // AddLocation(map, $"town_{i}", "Frontline Town", townPos, MapLocation.LocationType.Town, homeBase.Nation, true);
             }
         }
 

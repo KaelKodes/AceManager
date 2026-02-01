@@ -54,6 +54,13 @@ namespace AceManager.UI
 		{
 			_typeOption = GetNode<OptionButton>("%TypeOption");
 			_distanceSlider = GetNode<HSlider>("%DistanceSlider");
+
+			// New KM Calibration
+			_distanceSlider.MinValue = 10;
+			_distanceSlider.MaxValue = 150;
+			_distanceSlider.Step = 5;
+			_distanceSlider.Value = 30; // Default 30km start
+
 			_distanceValue = GetNode<Label>("%DistanceValue");
 			_riskOption = GetNode<OptionButton>("%RiskOption");
 			_costPreview = GetNode<Label>("%CostPreview");
@@ -133,6 +140,27 @@ namespace AceManager.UI
 			GD.Print($"MissionPlanningPanel: Found {_availableAircraft.Count} aircraft, {_availablePilots.Count} pilots");
 
 			RefreshLists();
+			RefreshLists();
+
+			// Auto-select Command's requested mission type
+			if (gm.TodaysBriefing != null)
+			{
+				var recommendedTypes = gm.TodaysBriefing.GetMatchingMissionTypes();
+				if (recommendedTypes.Count > 0)
+				{
+					var recommended = recommendedTypes[0];
+					// Find index in dropdown
+					for (int i = 0; i < _typeOption.ItemCount; i++)
+					{
+						if (_typeOption.GetItemText(i) == recommended.ToString())
+						{
+							_typeOption.Selected = i;
+							break;
+						}
+					}
+				}
+			}
+
 			UpdateMapPreview();
 		}
 
@@ -230,7 +258,9 @@ namespace AceManager.UI
 		{
 			_distanceSlider.ValueChanged += (value) =>
 			{
-				_distanceValue.Text = ((int)value).ToString();
+				int km = (int)value;
+				int miles = (int)(km * 0.621371f);
+				_distanceValue.Text = $"{km} km ({miles} mi)";
 				UpdateCostPreview();
 				_manualTargetPos = null; // Reset manual target if distance changes via slider
 				UpdateMapPreview();
@@ -616,10 +646,15 @@ namespace AceManager.UI
 				_manualTargetPos = worldPos;
 				_manualTargetName = "Manual Target";
 
-				// Update slider to match distance
-				int dist = (int)Math.Max(1, Math.Min(10, (worldPos - homeWorldPos).Length() / 10f));
-				_distanceSlider.Value = dist;
-				_distanceValue.Text = dist.ToString();
+				// Update slider to match distance (World Distance is in KM since scale is 1 unit = 1 KM)
+				float distKm = (worldPos - homeWorldPos).Length();
+				int distClamped = (int)Math.Clamp(distKm, 10, 150);
+
+				// Snap to step 5
+				distClamped = (int)(Math.Round(distClamped / 5.0) * 5);
+
+				_distanceSlider.Value = distClamped;
+				// Label updates automatically via ValueChanged signal
 
 				UpdateMapPreview();
 			}
