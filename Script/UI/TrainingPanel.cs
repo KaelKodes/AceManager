@@ -243,6 +243,31 @@ namespace AceManager.UI
                 };
                 hBox.AddChild(check);
 
+                // Fatigue Display
+                string fatigueText = $"{Math.Round(pilot.Fatigue)}%";
+                Color fatigueColor = new Color(0.2f, 0.4f, 0.2f); // Greenish default
+
+                if (pilot.Fatigue > 70)
+                {
+                    fatigueText += " (Exhausted)";
+                    fatigueColor = new Color(0.8f, 0.2f, 0.2f);
+                }
+                else if (pilot.Fatigue > 40)
+                {
+                    fatigueText += " (Tired)";
+                    fatigueColor = new Color(0.8f, 0.4f, 0.1f);
+                }
+
+                var fatigueLabel = new Label
+                {
+                    Text = fatigueText,
+                    CustomMinimumSize = new Vector2(120, 0),
+                    HorizontalAlignment = HorizontalAlignment.Right
+                };
+                fatigueLabel.AddThemeColorOverride("font_color", fatigueColor);
+                fatigueLabel.AddThemeFontSizeOverride("font_size", 14);
+                hBox.AddChild(fatigueLabel);
+
                 var instructorBtn = new Button
                 {
                     Text = "Set Co-Instructor",
