@@ -12,7 +12,8 @@ namespace AceManager.Core
         Escort,
         Reconnaissance,
         Bombing,
-        Strafing  // Ground attack - trenches, convoys, artillery
+        Strafing,  // Ground attack - trenches, convoys, artillery
+        Training   // Skill improvement session
     }
 
     public enum RiskPosture
@@ -86,11 +87,7 @@ namespace AceManager.Core
         public int OrderBonus { get; set; } = 0;  // +/- prestige from order compliance
         public string OrderComplianceMessage { get; set; } = "";
 
-        // Legacy property
-        [Obsolete("Use CrewWounded")]
-        public int PilotsWounded { get => CrewWounded; set => CrewWounded = value; }
-        [Obsolete("Use CrewKilled")]
-        public int PilotsKilled { get => CrewKilled; set => CrewKilled = value; }
+
 
         public void AddAssignment(FlightAssignment assignment)
         {
@@ -127,7 +124,7 @@ namespace AceManager.Core
         }
 
         // Calculate base fuel cost for the mission
-        public int GetBaseFuelCost()
+        public int GetBaseFuelCost(float efficiencyModifier = 0f)
         {
             int baseCost = 0;
             foreach (var assignment in Assignments)
@@ -139,11 +136,14 @@ namespace AceManager.Core
                     baseCost += (int)(assignment.Aircraft.Definition.FuelConsumptionRange * TargetDistance * 0.5f);
                 }
             }
+            // Apply efficiency reduction (clamped 0-1)
+            baseCost = (int)(baseCost * (1.0f - Math.Clamp(efficiencyModifier, 0f, 0.9f)));
+
             return Math.Max(baseCost, 10); // Minimum fuel cost
         }
 
         // Calculate base ammo cost (higher for bombing missions)
-        public int GetBaseAmmoCost()
+        public int GetBaseAmmoCost(float efficiencyModifier = 0f)
         {
             int multiplier = Type == MissionType.Bombing ? 3 : 1;
             int baseCost = 0;
@@ -154,6 +154,9 @@ namespace AceManager.Core
                     baseCost += assignment.Aircraft.Definition.AmmoRange * multiplier * 5;
                 }
             }
+            // Apply efficiency reduction (clamped 0-1)
+            baseCost = (int)(baseCost * (1.0f - Math.Clamp(efficiencyModifier, 0f, 0.9f)));
+
             return Math.Max(baseCost, 5); // Minimum ammo cost
         }
 

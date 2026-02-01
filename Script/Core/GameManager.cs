@@ -281,6 +281,25 @@ namespace AceManager.Core
 
             var attendeeNames = session.AttendeePilotIds.ToHashSet();
 
+            // Create a MissionData object to represent this training for the Debrief UI
+            var trainingReport = new MissionData
+            {
+                Type = MissionType.Training,
+                Status = MissionStatus.Resolved,
+                ResultBand = MissionResultBand.Success, // Training is always a "success" in this sense
+                TargetName = "Training Area",
+                MissionLog = new List<string>
+                {
+                    $"TRAINING REPORT: {CurrentDate.ToShortDateString()}",
+                    $"MODULE: {lesson.Name.ToUpper()}",
+                    $"--------------------------------------------------",
+                    $"INSTRUCTOR: {(coInstructor != null ? coInstructor.Name : "Squadron Leader")}",
+                    $"FOCUS: {string.Join(", ", lesson.PrimaryStats)}",
+                    $"",
+                    $"ATTENDEES:"
+                }
+            };
+
             foreach (var pilot in roster)
             {
                 if (pilot.Status == PilotStatus.KIA) continue;
@@ -294,6 +313,12 @@ namespace AceManager.Core
                     }
                     // Small fatigue recovery bonus (they are working, but it's safe)
                     pilot.Fatigue = Math.Max(0, pilot.Fatigue - 5);
+
+                    trainingReport.MissionLog.Add($"- {pilot.Name}: COMPLETED");
+
+                    // Add to assignments so we get popups in debrief
+                    // We bypass AddAssignment validation since there's no aircraft
+                    trainingReport.Assignments.Add(new FlightAssignment { Pilot = pilot });
                 }
                 else
                 {
@@ -304,7 +329,11 @@ namespace AceManager.Core
                 pilot.ApplyDailyImprovements();
             }
 
+            trainingReport.MissionLog.Add("");
+            trainingReport.MissionLog.Add("SESSION CONCLUDED.");
+
             MissionCompletedToday = true;
+            LastCompletedMission = trainingReport; // Set this so StatusPanel picks it up
             EmitSignal(SignalName.MissionCompleted); // Trigger UI refresh (buttons etc)
             GD.Print($"Training session [{lesson.Name}] complete.");
         }

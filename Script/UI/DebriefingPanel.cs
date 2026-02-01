@@ -12,6 +12,7 @@ namespace AceManager.UI
         private VBoxContainer _leftColumn;
         private VBoxContainer _rightColumn;
         private Button _continueButton;
+        private ScrollContainer _logScroll;
 
         [Signal] public delegate void DebriefCompletedEventHandler();
 
@@ -29,27 +30,47 @@ namespace AceManager.UI
             bg.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
             AddChild(bg);
 
-            // 2. Center "Lounge" Image (Placeholder for now)
-            // We'll simulate a centered cinematic view
+            // 2. Main Layout Container
+            var margin = new MarginContainer();
+            margin.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+            margin.AddThemeConstantOverride("margin_left", 40);
+            margin.AddThemeConstantOverride("margin_right", 40);
+            margin.AddThemeConstantOverride("margin_top", 40);
+            margin.AddThemeConstantOverride("margin_bottom", 40);
+            AddChild(margin);
+
+            var mainHBox = new HBoxContainer();
+            margin.AddChild(mainHBox);
+
+            // --- Left Column (Stats) ---
+            _leftColumn = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.Fill };
+            mainHBox.AddChild(_leftColumn);
+
+            // --- Center Column (Image + Content) ---
+            var centerVBox = new VBoxContainer
+            {
+                SizeFlagsHorizontal = SizeFlags.ExpandFill,
+                SizeFlagsStretchRatio = 2.5f,
+                Alignment = BoxContainer.AlignmentMode.Center
+            };
+            centerVBox.AddThemeConstantOverride("separation", 20);
+            mainHBox.AddChild(centerVBox);
+
+            // Image
+            var texture = GetDebriefImage(_mission);
             var centerImg = new TextureRect
             {
-                Texture = GD.Load<Texture2D>("res://Assets/UI/Training/Frame.jpg"), // Re-using frame for now as placeholder or board
+                Texture = texture,
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-                Modulate = new Color(0.5f, 0.5f, 0.5f, 0.5f) // Dimmed
+                Modulate = new Color(0.9f, 0.9f, 0.9f, 1.0f),
+                CustomMinimumSize = new Vector2(800, 450),
+                SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
+                SizeFlagsVertical = SizeFlags.ShrinkCenter
             };
-            centerImg.CustomMinimumSize = new Vector2(800, 600);
-            centerImg.SetAnchorsAndOffsetsPreset(LayoutPreset.Center);
-            AddChild(centerImg);
+            centerVBox.AddChild(centerImg);
 
-            // 3. Central Text (Mission Result)
-            var centerContainer = new CenterContainer();
-            centerContainer.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-            AddChild(centerContainer);
-
-            var vBox = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-            centerContainer.AddChild(vBox);
-
+            // Result Text
             var resultLabel = new Label
             {
                 Text = _mission.ResultBand.ToString().Replace("Success", " SUCCESS").Replace("Failure", " FAILURE").ToUpper(),
@@ -58,47 +79,43 @@ namespace AceManager.UI
             };
             resultLabel.AddThemeFontSizeOverride("font_size", 48);
             resultLabel.AddThemeColorOverride("font_color", GetResultColor(_mission.ResultBand));
-            vBox.AddChild(resultLabel);
+            centerVBox.AddChild(resultLabel);
 
-            var summaryLabel = new Label
+            // Summary Text (Scrollable)
+            _logScroll = new ScrollContainer
             {
-                Text = _mission.MissionLog.LastOrDefault() ?? "Mission Complete",
-                HorizontalAlignment = HorizontalAlignment.Center
+                CustomMinimumSize = new Vector2(600, 150), // Give it some height
+                HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+                VerticalScrollMode = ScrollContainer.ScrollMode.Auto
             };
-            summaryLabel.AddThemeColorOverride("font_color", new Color(0.8f, 0.8f, 0.8f));
-            vBox.AddChild(summaryLabel);
+            centerVBox.AddChild(_logScroll);
 
-            // 4. Side Columns for Stat Popups
-            var margin = new MarginContainer();
-            margin.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-            margin.AddThemeConstantOverride("margin_left", 50);
-            margin.AddThemeConstantOverride("margin_right", 50);
-            margin.AddThemeConstantOverride("margin_top", 100);
-            margin.AddThemeConstantOverride("margin_bottom", 100);
-            AddChild(margin);
+            var summaryLabel = new RichTextLabel
+            {
+                Text = "[center]" + string.Join("\n", _mission.MissionLog) + "[/center]", // Join all log entries and center
+                BbcodeEnabled = true,
+                FitContent = true,
+                ScrollActive = false, // Let ScrollContainer handle it
+                CustomMinimumSize = new Vector2(600, 0),
+                SizeFlagsHorizontal = SizeFlags.ExpandFill
+            };
+            summaryLabel.AddThemeColorOverride("default_color", new Color(0.8f, 0.8f, 0.8f));
+            _logScroll.AddChild(summaryLabel);
 
-            var hBox = new HBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ExpandFill };
-            margin.AddChild(hBox);
-
-            _leftColumn = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ExpandFill };
-            hBox.AddChild(_leftColumn);
-
-            // Spacer in middle
-            hBox.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsStretchRatio = 2.0f });
-
-            _rightColumn = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ExpandFill };
-            hBox.AddChild(_rightColumn);
-
-            // Continue Button (Initially Hidden)
+            // Dismiss Button
             _continueButton = new Button
             {
                 Text = "DISMISS",
-                CustomMinimumSize = new Vector2(200, 50)
+                CustomMinimumSize = new Vector2(200, 50),
+                SizeFlagsHorizontal = SizeFlags.ShrinkCenter
             };
-            centerContainer.AddChild(_continueButton);
-            _continueButton.Position = new Vector2(0, 300); // Rough placement, CenterContainer will override
             _continueButton.Pressed += () => { EmitSignal(SignalName.DebriefCompleted); QueueFree(); };
-            _continueButton.Hide();
+            _continueButton.Hide(); // Show after animation
+            centerVBox.AddChild(_continueButton);
+
+            // --- Right Column (Stats) ---
+            _rightColumn = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.Fill };
+            mainHBox.AddChild(_rightColumn);
         }
 
         private async void AnimateStatGains()
@@ -127,9 +144,39 @@ namespace AceManager.UI
                 await ToSignal(GetTree().CreateTimer(0.8f), "timeout");
             }
 
+            // Start Cinematic Scroll
+            AnimateLogScroll();
+
             // Show Continue Button after all animations
             await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
             _continueButton.Show();
+        }
+
+        private async void AnimateLogScroll()
+        {
+            if (_logScroll == null) return;
+
+            // Wait for layout to calculate sizes
+            await ToSignal(GetTree(), "process_frame");
+            await ToSignal(GetTree(), "process_frame");
+
+            int totalHeight = (int)_logScroll.GetVScrollBar().MaxValue;
+            int visibleHeight = (int)_logScroll.Size.Y;
+
+            if (totalHeight > visibleHeight)
+            {
+                var tween = CreateTween();
+
+                // Calculate duration based on length (e.g., 20 pixels per second, min 5 seconds)
+                float pixelsToScroll = totalHeight - visibleHeight;
+                float duration = Math.Max(5.0f, pixelsToScroll / 20.0f);
+
+                // Wait a moment before scrolling
+                tween.TweenInterval(1.0f);
+                tween.TweenProperty(_logScroll, "scroll_vertical", (int)pixelsToScroll, duration)
+                    .SetTrans(Tween.TransitionType.Linear)
+                    .SetEase(Tween.EaseType.InOut);
+            }
         }
 
         private Control CreateStatPopup(CrewData pilot)
@@ -190,6 +237,52 @@ namespace AceManager.UI
                 MissionResultBand.Failure => new Color(1.0f, 0.4f, 0.2f),
                 MissionResultBand.Disaster => new Color(1.0f, 0.2f, 0.2f),
                 _ => Colors.White
+            };
+        }
+
+        private Texture2D GetDebriefImage(MissionData mission)
+        {
+            // 1. Check for Disasters / Crashes
+            if (mission.ResultBand == MissionResultBand.Disaster || mission.ResultBand == MissionResultBand.Failure)
+            {
+                // 50/50 chance for different crash images
+                return new Random().Next(2) == 0
+                    ? GD.Load<Texture2D>("res://Assets/UI/Debrief/DebriefCrashed.png")
+                    : GD.Load<Texture2D>("res://Assets/UI/Debrief/DebriefCrashed2.png");
+            }
+
+            // 2. Check for heavy damage / wounded
+            if (mission.CrewWounded > 0 || mission.AircraftLost > 0)
+            {
+                return GD.Load<Texture2D>("res://Assets/UI/Debrief/DebriefDamaged.png");
+            }
+
+            // 3. Success / Celebration (Lounge)
+            if (mission.ResultBand <= MissionResultBand.Success)
+            {
+                string nation = GameManager.Instance.SelectedNation;
+                bool isGermany = nation == "Germany";
+
+                int variant = new Random().Next(1, 5); // 1-4 (Germany has 4, Allies have 5, safeguard to 4 for now)
+
+                if (isGermany)
+                {
+                    return GD.Load<Texture2D>($"res://Assets/UI/PilotsLounge/Offiziersbar{variant}.png");
+                }
+                else
+                {
+                    variant = new Random().Next(1, 6); // 1-5 for Allies
+                    return GD.Load<Texture2D>($"res://Assets/UI/PilotsLounge/PilotsLounge{variant}.png");
+                }
+            }
+
+            // 4. Default by Mission Type
+            return mission.Type switch
+            {
+                MissionType.Bombing or MissionType.Strafing => GD.Load<Texture2D>("res://Assets/UI/Debrief/debriefbombing.png"),
+                MissionType.Reconnaissance => GD.Load<Texture2D>("res://Assets/UI/Debrief/debriefRecon.png"),
+                MissionType.Training => GD.Load<Texture2D>("res://Assets/UI/Debrief/debriefRecon.png"), // Use Recon image (classroom/map) for now
+                _ => GD.Load<Texture2D>("res://Assets/UI/Debrief/debriefScramble.png")
             };
         }
     }

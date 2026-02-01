@@ -47,6 +47,17 @@ namespace AceManager.Core
             return (int)Math.Max(4, Math.Floor(avg * 6));
         }
 
+        public float GetEfficiencyBonus()
+        {
+            // Operations Center improves logistics planning
+            // Level 1: 0%
+            // Level 2: 5%
+            // Level 3: 10%
+            // Level 4: 15%
+            // Level 5: 20%
+            return (OperationsRating - 1) * 0.05f;
+        }
+
         public int GetRating(string facilityName)
         {
             return facilityName switch

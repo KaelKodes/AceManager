@@ -42,6 +42,14 @@ theme_override_font_sizes/font_size = 28
 text = "MISSION PLANNING"
 horizontal_alignment = 1
 
+[node name="FlightLeaderLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 14
+text = "Select an Aircraft to start your flight"
+horizontal_alignment = 1
+
 [node name="MainSplit" type="HSplitContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -105,11 +113,7 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 6
 
-[node name="FlightLeaderLabel" type="Label" parent="MarginContainer/VBoxContainer/MainSplit/LeftPanel"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-text = "Flight Leader: (click an assignment)"
+
 
 [node name="RightSplit" type="HSplitContainer" parent="MarginContainer/VBoxContainer/MainSplit"]
 layout_mode = 2

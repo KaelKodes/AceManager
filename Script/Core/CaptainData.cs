@@ -77,5 +77,7 @@ namespace AceManager.Core
             }
             return 0; // Already max rank
         }
+
+
     }
 }

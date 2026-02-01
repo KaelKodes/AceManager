@@ -14,11 +14,18 @@ namespace AceManager.Core
             Log(mission, "=== PHASE 4: Consequences ===");
 
             // Resource consumption
-            mission.FuelConsumed = mission.GetBaseFuelCost();
-            mission.AmmoConsumed = mission.GetBaseAmmoCost();
+            // Resource consumption
+            float efficiency = 0f;
+            if (baseData != null)
+            {
+                efficiency = baseData.GetEfficiencyBonus();
+            }
+
+            mission.FuelConsumed = mission.GetBaseFuelCost(efficiency);
+            mission.AmmoConsumed = mission.GetBaseAmmoCost(efficiency);
             baseData.CurrentFuel -= mission.FuelConsumed;
             baseData.CurrentAmmo -= mission.AmmoConsumed;
-            Log(mission, $"Consumed: {mission.FuelConsumed} fuel, {mission.AmmoConsumed} ammo.");
+            Log(mission, $"Consumed: {mission.FuelConsumed} fuel, {mission.AmmoConsumed} ammo (Logistics: {(int)(efficiency * 100)}%).");
 
             // Losses based on result band
             CalculateLosses(mission);

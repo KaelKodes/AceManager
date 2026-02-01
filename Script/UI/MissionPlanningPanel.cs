@@ -82,8 +82,8 @@ namespace AceManager.UI
 			SetupOptions();
 			ConnectSignals();
 
-			_pilotList.TooltipText = "Double-click to view Pilot Details";
-			_aircraftList.TooltipText = "Double-click to view Aircraft Details";
+			_pilotList.TooltipText = "Right-click to view Pilot Details";
+			_aircraftList.TooltipText = "Right-click to view Aircraft Details";
 
 			_isReady = true;
 			RefreshData();
@@ -91,6 +91,12 @@ namespace AceManager.UI
 
 		private void SetupMapNodes()
 		{
+			// Clear any placeholders defined in the scene (e.g. the black ColorRect)
+			foreach (Node child in _flightMapArea.GetChildren())
+			{
+				child.QueueFree();
+			}
+
 			// Initialize Renderer
 			_renderer = new MapRenderer(_flightMapArea);
 			// Default scale for Briefing Map (might be overridden)
@@ -128,9 +134,19 @@ namespace AceManager.UI
 			_targetLabel.AddThemeFontSizeOverride("font_size", 10);
 			_flightMapArea.AddChild(_targetLabel);
 
+
+
+			// Enable clipping to prevent map from drawing over other UI elements
+			_flightMapArea.ClipContents = true;
+
 			// Hook input for clicking (still needed for setting target manualy)
 			_flightMapArea.GuiInput += OnMapInput;
-			_flightMapArea.Resized += () => CallDeferred(nameof(UpdateMapVisuals));
+			_flightMapArea.Resized += () =>
+			{
+				// Rebuild to show markers if initial size was 0
+				_renderer?.RebuildMap();
+				CallDeferred(nameof(UpdateMapVisuals));
+			};
 		}
 
 		private void OnMapCursorMove(Vector2 localPos)
@@ -178,6 +194,7 @@ namespace AceManager.UI
 				_routePlanner.HomeWorldPos = homeCoords;
 				_renderer.HomeWorldPos = homeCoords; // Important: center view on home
 				_renderer.SetMapData(gm.SectorMap);
+				GD.Print($"MissionPlanningPanel: Loaded map with {gm.SectorMap.Locations.Count} locations and {gm.SectorMap.FrontLinePoints?.Length ?? 0} frontline points.");
 			}
 
 			// Reset selection flow
@@ -362,8 +379,15 @@ namespace AceManager.UI
 			_pilotList.ItemSelected += OnPilotSelected;
 			_aircraftList.ItemSelected += OnAircraftSelected;
 
-			_pilotList.ItemActivated += OnPilotDoubleClicked;
-			_aircraftList.ItemActivated += OnAircraftDoubleClicked;
+			// Right-click to inspect
+			_pilotList.ItemClicked += (index, pos, btn) =>
+			{
+				if (btn == (long)MouseButton.Right) OnPilotDoubleClicked(index);
+			};
+			_aircraftList.ItemClicked += (index, pos, btn) =>
+			{
+				if (btn == (long)MouseButton.Right) OnAircraftDoubleClicked(index);
+			};
 
 			_cancelButton.Pressed += OnCancelPressed;
 			_launchButton.Pressed += OnLaunchPressed;
@@ -509,6 +533,9 @@ namespace AceManager.UI
 
 		private void UpdateModeInstructions()
 		{
+			// Always green per user request
+			_flightLeaderLabel.SelfModulate = new Color(0.5f, 1f, 0.5f);
+
 			bool isGrounded = GameManager.Instance.TodaysBriefing?.IsFlightGrounded() ?? false;
 			if (_currentMode == SelectionMode.PickAircraft)
 			{
@@ -531,11 +558,6 @@ namespace AceManager.UI
 				SetListEnabled(_pilotList, true);
 				SetListEnabled(_aircraftList, false);
 				_flightLeaderLabel.Text = $"Assign Observer for the {(_tempAssignment?.Aircraft?.Definition?.Name ?? "Aircraft")}";
-				_flightLeaderLabel.SelfModulate = new Color(0.5f, 1f, 0.5f);
-			}
-			else
-			{
-				_flightLeaderLabel.SelfModulate = Colors.White;
 			}
 		}
 
@@ -641,30 +663,53 @@ namespace AceManager.UI
 			int distance = (int)_distanceSlider.Value;
 			var selectedType = (MissionType)_typeOption.Selected;
 
+			// Get Logistics Efficiency from Airbase Operations Center
+			float efficiency = 0f;
+			if (GameManager.Instance.CurrentBase != null)
+			{
+				efficiency = GameManager.Instance.CurrentBase.GetEfficiencyBonus();
+			}
+
 			int baseFuel = 0;
 			int baseAmmo = 0;
+
+			int flightCount = _pendingAssignments.Count;
+			int crewCount = _pendingAssignments.Sum(a => a.GetCrewCount());
 
 			foreach (var assignment in _pendingAssignments)
 			{
 				if (assignment.Aircraft?.Definition != null)
 				{
 					var def = assignment.Aircraft.Definition;
-					baseFuel += def.FuelConsumptionRange * distance * 5;
+					// Match MissionData logic: Cons * Dist * 0.5
+					baseFuel += (int)(def.FuelConsumptionRange * distance * 0.5f);
 					baseAmmo += def.AmmoRange * (selectedType == MissionType.Bombing ? 15 : 5);
 				}
 			}
 
-			int flightCount = _pendingAssignments.Count;
-			int crewCount = _pendingAssignments.Sum(a => a.GetCrewCount());
+			// Apply Efficiency
+			baseFuel = (int)(baseFuel * (1.0f - efficiency));
+			baseAmmo = (int)(baseAmmo * (1.0f - efficiency));
 
-			if (flightCount == 0)
+			// Minima
+			if (flightCount > 0)
 			{
+				baseFuel = Math.Max(baseFuel, 10);
+				baseAmmo = Math.Max(baseAmmo, 5);
+			}
+			else
+			{
+				// Estimation for no assignments yet (raw guess)
 				baseFuel = distance * 50;
+				if (efficiency > 0) baseFuel = (int)(baseFuel * (1.0f - efficiency));
+
 				baseAmmo = selectedType == MissionType.Bombing ? 60 : 20;
 			}
 
 			string gridRef = GridSystem.WorldToGrid(targetPos, GameManager.Instance.SectorMap);
-			_costPreview.Text = $"Flights: {flightCount} | Crew: {crewCount} | Fuel: ~{baseFuel} | Ammo: ~{baseAmmo} | Sector: {gridRef}";
+			string savings = efficiency > 0 ? $" (-{(int)(efficiency * 100)}%)" : "";
+
+			_costPreview.Text = $"Flights: {flightCount} | Crew: {crewCount} | Fuel: ~{baseFuel}{savings} | Ammo: ~{baseAmmo} | Sector: {gridRef}";
 		}
 
 		private void OnTrainingPressed()
@@ -731,26 +776,14 @@ namespace AceManager.UI
 		private void OnMapInput(InputEvent @event)
 		{
 			// Handle clicking to set target
+			// DISABLED for now per user request - Pan only
+			/*
 			if (@event is InputEventMouseButton mb && mb.Pressed && mb.ButtonIndex == MouseButton.Left)
 			{
-				// We use input controller for drag, but if we just click, we want to set target.
-				// MapInputController consumes input? 
-				// Only "SetInputAsHandled" if it's a drag.
-				// For a simple click, maybe MapInputController doesn't consume it if it's not a drag.
-				// But OnMapInput is connected to GuiInput.
-				// We'll calculate world pos and set target.
-
-				// If dragging, we assume _isDragging in controller prevents this if we check carefully.
-				// But for now, let's just allow clicking ANYWHERE to set target (unless it's a drag start?)
-
+				// ... (existing logic commented out) ...
 				Vector2 mapPos = mb.Position;
 				Vector2 center = _flightMapArea.Size / 2;
 				Vector2 homeWorldPos = _routePlanner.HomeWorldPos;
-
-				// We need to ask Renderer for visual->world conversion? 
-				// Renderer helper:
-				// screen = center + (world - currentOrigin) * scale
-				// world = (screen - center) / scale + currentOrigin
 
 				Vector2 currentOrigin = homeWorldPos + _renderer.ViewOffset;
 				Vector2 worldPos = (mapPos - center) / _renderer.MapScale + currentOrigin;
@@ -759,11 +792,11 @@ namespace AceManager.UI
 				_routePlanner.SetTarget(worldPos, "Manual Target");
 
 				// Update Slider to match
-				// Planner already updated internal distance, but we need to update UI slider without triggering loop
 				_distanceSlider.SetValueNoSignal(_routePlanner.DistanceKM);
 				_distanceValue.Text = $"{_routePlanner.DistanceKM} km";
 			}
-			// Let InputController handle the rest (pan/zoom) via its own connection (Wait, I passed _flightMapArea to InputController, it connected itself)
+			*/
+			// Let InputController handle the rest (pan/zoom)
 		}
 
 		private void UpdateMapVisuals()

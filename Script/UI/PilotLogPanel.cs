@@ -29,20 +29,13 @@ namespace AceManager.UI
             center.AddChild(panel);
 
             // Style the panel (Vintage Logbook)
-            var style = new StyleBoxFlat
+            var style = new StyleBoxTexture
             {
-                BgColor = new Color(0.12f, 0.10f, 0.08f), // Dark Slate
-                BorderWidthLeft = 4,
-                BorderWidthTop = 4,
-                BorderWidthRight = 4,
-                BorderWidthBottom = 4,
-                BorderColor = new Color(0.4f, 0.35f, 0.2f), // Brass
-                CornerRadiusTopLeft = 4,
-                CornerRadiusTopRight = 4,
-                CornerRadiusBottomLeft = 4,
-                CornerRadiusBottomRight = 4,
-                ShadowSize = 10,
-                ShadowColor = new Color(0, 0, 0, 0.5f)
+                Texture = GD.Load<Texture2D>("res://Assets/UI/PilotsLog/PilotsLog.png"),
+                ContentMarginLeft = 40,
+                ContentMarginRight = 40,
+                ContentMarginTop = 50,
+                ContentMarginBottom = 40
             };
             panel.AddThemeStyleboxOverride("panel", style);
 

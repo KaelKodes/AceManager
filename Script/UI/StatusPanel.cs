@@ -95,6 +95,64 @@ namespace AceManager.UI
 
             // Initialize Background Map
             InitializeCentralMap();
+
+            // Apply Theme Style to Panels
+            // We find the parent containers for the elements we want to style
+            var ratingsPanel = _ratingsContainer?.GetParent<Control>();
+            var resourcePanel = _baseNameLabel?.GetParent<Control>();
+            // Footer is the parent of the Advance button
+            var footerPanel = _advanceButton?.GetParent<Control>();
+
+            if (ratingsPanel != null) ApplyThemeStyle(ratingsPanel);
+            if (resourcePanel != null) ApplyThemeStyle(resourcePanel);
+            if (footerPanel != null) ApplyThemeStyle(footerPanel);
+        }
+
+        private void ApplyThemeStyle(Control target)
+        {
+            if (target == null) return;
+            var parent = target.GetParent<Control>();
+            if (parent == null) return;
+
+            // Capture index to keep order
+            int index = target.GetIndex();
+
+            parent.RemoveChild(target);
+
+            var wrapper = new PanelContainer();
+
+            // Style matching IntroductionPanel
+            var style = new StyleBoxFlat
+            {
+                BgColor = new Color(0.12f, 0.10f, 0.08f), // Deep dark
+                BorderWidthLeft = 4,
+                BorderWidthRight = 4,
+                BorderWidthTop = 4,
+                BorderWidthBottom = 4,
+                BorderColor = new Color(0.4f, 0.35f, 0.25f), // Brass/Bronze
+                CornerRadiusTopLeft = 10,
+                CornerRadiusTopRight = 10,
+                CornerRadiusBottomLeft = 10,
+                CornerRadiusBottomRight = 10,
+                ShadowSize = 20,
+                ShadowColor = new Color(0, 0, 0, 0.5f),
+                // Add padding for content
+                ContentMarginLeft = 20,
+                ContentMarginRight = 20,
+                ContentMarginTop = 20,
+                ContentMarginBottom = 20
+            };
+            wrapper.AddThemeStyleboxOverride("panel", style);
+
+            // Copy layout flags
+            wrapper.SizeFlagsHorizontal = target.SizeFlagsHorizontal;
+            wrapper.SizeFlagsVertical = target.SizeFlagsVertical;
+            wrapper.LayoutMode = 2; // AnchorsContainer
+
+            parent.AddChild(wrapper);
+            parent.MoveChild(wrapper, index);
+
+            wrapper.AddChild(target);
         }
 
         private void InitializeCentralMap()
@@ -172,7 +230,19 @@ namespace AceManager.UI
             // Use the new Immersive Debrief Panel
             var debrief = new DebriefingPanel();
             AddChild(debrief);
+            debrief.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
             debrief.Setup(mission);
+
+            // Close logic
+            debrief.DebriefCompleted += () =>
+            {
+                SetOverlayUIVisible(true);
+                if (GodotObject.IsInstanceValid(_commandMapPanel)) _commandMapPanel.Show();
+            };
+
+            // Hide main UI
+            SetOverlayUIVisible(false);
+            if (GodotObject.IsInstanceValid(_commandMapPanel)) _commandMapPanel.Hide();
         }
 
         private void OnViewMapPressed()
@@ -252,9 +322,15 @@ namespace AceManager.UI
                 _missionPlanningPanel.Show();
             }
 
-            // Update map when mission is planned
-            var mapPanel = _commandMapPanel as CommandMapPanel;
-            mapPanel?.ShowMap(GameManager.Instance.SectorMap);
+            // Hide main UI and other panels
+            SetOverlayUIVisible(false);
+            if (GodotObject.IsInstanceValid(_rosterPanel)) _rosterPanel.Hide();
+            if (GodotObject.IsInstanceValid(_briefingPanel)) _briefingPanel.Hide();
+            if (GodotObject.IsInstanceValid(_commandMapPanel))
+            {
+                GD.Print("Hiding CommandMapPanel (Background)");
+                _commandMapPanel.Hide();
+            }
         }
 
 
@@ -266,7 +342,8 @@ namespace AceManager.UI
 
         private void OnPlanningPanelClosed()
         {
-            // Panel hides itself
+            SetOverlayUIVisible(true);
+            if (GodotObject.IsInstanceValid(_commandMapPanel)) _commandMapPanel.Show();
         }
 
         private void ShowTraining()
@@ -318,7 +395,19 @@ namespace AceManager.UI
             // Auto-open new debrief on completion
             var debrief = new DebriefingPanel();
             AddChild(debrief);
+            debrief.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
             debrief.Setup(mission);
+
+            // Close logic
+            debrief.DebriefCompleted += () =>
+            {
+                SetOverlayUIVisible(true);
+                if (GodotObject.IsInstanceValid(_commandMapPanel)) _commandMapPanel.Show();
+            };
+
+            // Hide main UI
+            SetOverlayUIVisible(false);
+            if (GodotObject.IsInstanceValid(_commandMapPanel)) _commandMapPanel.Hide();
         }
 
         private void UpdateMissionButtonState()
@@ -346,6 +435,16 @@ namespace AceManager.UI
             _planMissionButton.Disabled = !canFly;
             _planMissionButton.Text = isGrounded ? "Plan Training" : "Plan Mission";
             _planMissionButton.TooltipText = tooltip;
+
+            // Highlight Advance Day button if work is done
+            if (gm.MissionCompletedToday)
+            {
+                _advanceButton.Modulate = Colors.Gold;
+            }
+            else
+            {
+                _advanceButton.Modulate = Colors.White;
+            }
         }
 
 

@@ -104,14 +104,20 @@ namespace AceManager.Core
         {
             LogEntry(mission, "=== PHASE 1: Readiness Check ===");
 
-            int fuelNeeded = mission.GetBaseFuelCost();
+            float efficiency = 0f;
+            if (baseData != null)
+            {
+                efficiency = baseData.GetEfficiencyBonus();
+            }
+
+            int fuelNeeded = mission.GetBaseFuelCost(efficiency);
             if (baseData.CurrentFuel < fuelNeeded)
             {
                 LogEntry(mission, $"ABORT: Insufficient fuel. Need {fuelNeeded}, have {baseData.CurrentFuel}.");
                 return false;
             }
 
-            int ammoNeeded = mission.GetBaseAmmoCost();
+            int ammoNeeded = mission.GetBaseAmmoCost(efficiency);
             if (baseData.CurrentAmmo < ammoNeeded)
             {
                 LogEntry(mission, $"ABORT: Insufficient ammo. Need {ammoNeeded}, have {baseData.CurrentAmmo}.");
