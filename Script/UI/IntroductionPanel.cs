@@ -15,6 +15,9 @@ namespace AceManager.UI
 
         public override void _Ready()
         {
+            // Ensure the root node fills the screen
+            this.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+
             // Dimming Background
             var dim = new ColorRect { Color = new Color(0, 0, 0, 0.8f) };
             dim.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
@@ -79,8 +82,9 @@ namespace AceManager.UI
                 Text = "Loading briefing...",
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
-                SizeFlagsVertical = SizeFlags.ExpandFill,
-                AutowrapMode = TextServer.AutowrapMode.WordSmart
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                SizeFlagsHorizontal = SizeFlags.ExpandFill,
+                SizeFlagsVertical = SizeFlags.ExpandFill
             };
             _messageLabel.AddThemeFontSizeOverride("font_size", 20);
             _messageLabel.AddThemeColorOverride("font_color", new Color(0.85f, 0.85f, 0.8f));
