@@ -51,6 +51,13 @@ namespace AceManager.Core
         [Export] public Vector2 TargetLocation { get; set; }
         [Export] public string TargetName { get; set; }
 
+        // Escort Mission Support
+        public Vector2? RendezvousPoint { get; set; }
+        public Vector2? DisengagePoint { get; set; }
+
+        // Metadata for AI-assigned orders
+        public string CommanderOrderContext { get; set; }
+
         // Flight segments / path
         public List<Vector2> Waypoints { get; set; } = new List<Vector2>();
 

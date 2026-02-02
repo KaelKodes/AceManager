@@ -16,21 +16,37 @@ namespace AceManager.Core.Strategy
         [Export] public IndustryType ProductionType { get; set; }
         [Export] public float ProductionRate { get; set; } = 10f; // Units per day
 
-        // Industrial nodes are the "Hearts" - they have no parents, only children.
+        public IndustrialNode()
+        {
+            MaxIntegrity = 400f;
+            CurrentIntegrity = 400f;
+        }
     }
 
     public partial class LogisticsNode : StrategicNode
     {
         [Export] public float ThroughputCapacity { get; set; } = 100f;
 
+        // Dynamic workload from rerouted connections
+        public float CurrentWorkload { get; set; } = 0f;
+
         // Rail Hubs, Ports, Supply Depots
         public bool IsRailHub { get; set; } // If true, losing this kills child supply
+
+        public LogisticsNode()
+        {
+            MaxIntegrity = 250f;
+            CurrentIntegrity = 250f;
+        }
     }
 
     public partial class MilitaryNode : StrategicNode
     {
         [Export] public float Readiness { get; set; } = 100f; // Combat efficiency
         [Export] public float ResourceConsumption { get; set; } = 5f; // Daily upkeep
+
+        // The specific order assigned by the SubCommander for today
+        public MissionData CurrentOrder { get; set; }
 
         // Airfields, Infantry Bases
     }

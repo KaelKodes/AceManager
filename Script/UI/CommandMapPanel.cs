@@ -25,7 +25,7 @@ namespace AceManager.UI
         private Vector2 _homeWorldPos = Vector2.Zero;
 
         // Debug Editor State
-        private bool _debugEditMode = false; // Calibration complete
+        private bool _debugEditMode => GameManager.Instance?.DebugMode ?? false;
         private Label _calibrationLabel;
         private Control _debugContainer;
         private List<Control> _debugHandles = new();
@@ -53,8 +53,8 @@ namespace AceManager.UI
             _panelContainer = GetNode<Control>("Panel");
             _legendPanel = GetNodeOrNull<Control>("Panel/VBoxContainer/ContentHBox/LegendPanel");
 
-            // Disable clipping for now to see where the map goes if it fails
-            _mapArea.ClipContents = false;
+            // Enable clipping to keep visuals within the map area
+            _mapArea.ClipContents = true;
 
             // Block input to background and allow focus
             MouseFilter = MouseFilterEnum.Stop;
@@ -329,23 +329,44 @@ namespace AceManager.UI
 
         private void UpdateDebugHandles()
         {
-            if (_mapData.FrontLinePoints == null) return;
+            if (_mapData == null) return;
 
-            // Rebuild handles if count mismatch
-            if (_debugHandles.Count != _mapData.FrontLinePoints.Length)
+            // 1. Frontline Handles
+            if (_mapData.FrontLinePoints != null)
+            {
+                // (Existing Frontline Logic if needed, but we focus on nodes now per request)
+                // Keeping logic simple: If handles exist for frontline, keep them. 
+                // Actually, let's CLEAR and rebuild to support multiple modes if we wanted, 
+                // but for now, let's just ADD node handles to the list.
+            }
+
+            // Ensure we have handles for Strategic Nodes (Allied Only)
+            var alliedNodes = _mapData.StrategicNodes.Where(n => n.OwningNation == "Allied").ToList();
+
+            // Rebuild handles if count mismatch (simplest way: clear all and rebuild)
+            if (_debugHandles.Count != alliedNodes.Count)
             {
                 foreach (var h in _debugHandles) h.QueueFree();
                 _debugHandles.Clear();
 
-                for (int i = 0; i < _mapData.FrontLinePoints.Length; i++)
+                for (int i = 0; i < alliedNodes.Count; i++)
                 {
+                    var node = alliedNodes[i];
                     var handle = new ColorRect();
-                    handle.Size = new Vector2(10, 10);
-                    handle.Color = Colors.Yellow;
-                    handle.MouseFilter = MouseFilterEnum.Stop; // Catch input
+                    handle.Size = new Vector2(16, 16); // Bigger for nodes
+                    handle.Color = Colors.Cyan; // Cyan for Allied Nodes
+                    handle.MouseFilter = MouseFilterEnum.Stop;
                     handle.SetMeta("Idx", i);
+                    handle.SetMeta("IsNode", true);
+                    handle.SetMeta("NodeId", node.Id);
 
-                    // Capture handle input
+                    // Add label
+                    var lbl = new Label();
+                    lbl.Text = node.Name;
+                    lbl.AddThemeFontSizeOverride("font_size", 10);
+                    lbl.Position = new Vector2(18, -5);
+                    handle.AddChild(lbl);
+
                     handle.GuiInput += (evt) => OnHandleInput(handle, evt);
 
                     _debugContainer.AddChild(handle);
@@ -354,15 +375,13 @@ namespace AceManager.UI
             }
 
             // Position handles
-            for (int i = 0; i < _mapData.FrontLinePoints.Length; i++)
+            for (int i = 0; i < alliedNodes.Count; i++)
             {
-                Vector2 worldPos = _mapData.FrontLinePoints[i];
+                if (i >= _debugHandles.Count) break;
 
-                // Use Unified Transform
-                Vector2 screenPos = _renderer.GetVisualPosition(worldPos);
-
-                if (i < _debugHandles.Count)
-                    _debugHandles[i].Position = screenPos - new Vector2(5, 5); // Center the 10x10 handle
+                var node = alliedNodes[i];
+                Vector2 screenPos = _renderer.GetVisualPosition(node.WorldCoordinates);
+                _debugHandles[i].Position = screenPos - new Vector2(8, 8); // Centered
             }
         }
 
@@ -379,10 +398,7 @@ namespace AceManager.UI
                     }
                     else
                     {
-                        if (_draggedHandleIndex != -1)
-                        {
-                            _draggedHandleIndex = -1;
-                        }
+                        if (_draggedHandleIndex != -1) _draggedHandleIndex = -1;
                     }
                     GetViewport().SetInputAsHandled();
                 }
@@ -391,23 +407,60 @@ namespace AceManager.UI
             {
                 // Update handle position
                 int idx = _draggedHandleIndex;
+                if (idx < 0 || idx >= _debugHandles.Count) return;
+
+                var draggedHandle = _debugHandles[idx];
+                if (!draggedHandle.HasMeta("IsNode")) return; // Only process nodes for now
+
                 Vector2 deltaScreen = mm.Relative;
 
-                // Simple drag factor approximation since we don't need pixel-perfect reverse projection for debug
-                // Accessing internal spread seems hard unless we expose it from mapdata directly? MapData is public.
-                float spreadSafeX = Math.Max(0.1f, _mapData?.LonSpread ?? 1.0f);
-                float spreadSafeY = Math.Max(0.1f, _mapData?.LatSpread ?? 1.0f);
+                // Convert screen delta to World KM delta
+                // Screen = Center + (World - Origin) * Scale
+                // DeltaScreen = DeltaWorld * Scale
+                // DeltaWorld = DeltaScreen / Scale
 
-                float dX = deltaScreen.X / (_mapScale * spreadSafeX);
-                float dY = deltaScreen.Y / (_mapScale * spreadSafeY);
+                Vector2 deltaWorld = deltaScreen / _mapScale;
 
-                // Update point
-                if (idx >= 0 && idx < _mapData.FrontLinePoints.Length)
+                var alliedNodes = _mapData.StrategicNodes.Where(n => n.OwningNation == "Allied").ToList();
+                if (idx < alliedNodes.Count)
                 {
-                    _mapData.FrontLinePoints[idx] += new Vector2(dX, dY);
+                    alliedNodes[idx].WorldCoordinates += deltaWorld;
                     UpdateVisualPositions();
                 }
             }
+        }
+
+        private void ExportNodeCoords()
+        {
+            GD.Print("=== EXPORTED ALLIED NODE COORDS ===");
+            GD.Print("// Replace existing node generation/coordinates with:");
+
+            var alliedNodes = _mapData.StrategicNodes.Where(n => n.OwningNation == "Allied").ToList();
+            float lonScale = 71f;
+            float latScale = 111f;
+
+            foreach (var node in alliedNodes)
+            {
+                // Reverse projection to simplified Lat/Lon for code-friendly reading? 
+                // Or just raw WorldKM? The user likely wants raw WorldKM logic or the "Generator" calls.
+                // However, Generator uses "GenerateCentralHub" etc.
+                // We'll print the Vector2 code for WorldCoordinates.
+
+                GD.Print($"// Node: {node.Name} ({node.GetType().Name})");
+                GD.Print($"// Id: {node.Id}");
+                GD.Print($"// Pos: {node.WorldCoordinates.X:F1}, {node.WorldCoordinates.Y:F1}");
+
+                // Inverse Lat/Lon if they want to update the fixed generators
+                // X = Lon * 71 -> Lon = X / 71
+                // Y = -Lat * 111 -> Lat = -Y / 111
+                float estLon = node.WorldCoordinates.X / lonScale;
+                float estLat = -node.WorldCoordinates.Y / latScale;
+
+                GD.Print($"// Approx Lat/Lon: {estLat:F4}, {estLon:F4}");
+                GD.Print($"/* C# Update */ node.WorldCoordinates = new Vector2({node.WorldCoordinates.X:F1}f, {node.WorldCoordinates.Y:F1}f);");
+                GD.Print("---------------------------------------------------");
+            }
+            GD.Print("===================================");
         }
 
         private void ExportFrontlineCoords()
@@ -501,10 +554,16 @@ namespace AceManager.UI
             vbox.AddChild(btnPrint);
 
             // Export Frontline Button
-            var btnExport = new Button { Text = "EXPORT PRECISE COORDS" };
+            var btnExport = new Button { Text = "EXPORT FRONTLINE" };
             btnExport.Pressed += ExportFrontlineCoords;
             btnExport.Modulate = Colors.GreenYellow;
             vbox.AddChild(btnExport);
+
+            // Export Nodes Button
+            var btnExportNodes = new Button { Text = "EXPORT ALLIES" };
+            btnExportNodes.Pressed += ExportNodeCoords;
+            btnExportNodes.Modulate = Colors.Cyan;
+            vbox.AddChild(btnExportNodes);
 
             // Label
             _calibrationLabel = new Label();

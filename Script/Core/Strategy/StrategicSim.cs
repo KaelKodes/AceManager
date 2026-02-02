@@ -12,26 +12,34 @@ namespace AceManager.Core.Strategy
     /// </summary>
     public static class StrategicSim
     {
+        private static MainCommander _alliedMC;
+        private static MainCommander _axisMC;
+        private static List<SubCommander> _alliedSCs;
+        private static List<SubCommander> _axisSCs;
+
         public static void ProcessTurn(MapData map)
         {
             if (map == null) return;
             GD.Print($"[StrategicSim] Processing Turn for {map.StrategicNodes.Count} nodes...");
 
-            // 1. Production Phase
+            // 0. AI Commander Phase
+            RunAICommanderPhase(map);
+
+            // 1. Logistical Rerouting Phase
+            // If parents are destroyed, try to find alternatives
+            HandleLogisticalRerouting(map);
+
+            // 2. Production Phase
             foreach (var node in map.StrategicNodes.OfType<IndustrialNode>())
             {
                 ProcessProduction(node);
             }
 
-            // 2. Logistics Phase (Push Supply)
-            // Process from top of hierarchy down: Hubs -> Depots -> Bases
-            // We can approximate this by sorting by 'distance from front' or just multiple passes.
-            // For now, simple iteration. Factories push to hubs instantly? 
-            // Better: Factories added to stockpile. Supply push logic moves from Parent to Child.
+            // 3. Logistics Workload Phase
+            // Calculate how many nodes each depot is supporting
+            CalculateLogisticsWorkload(map);
 
-            // We need to process parents before children to allow flow in one turn, 
-            // or just accept 1-turn lag (simpler). Let's accept 1-turn lag for "Pro High" stability.
-
+            // 4. Supply Distribution Phase (Push Supply)
             foreach (var node in map.StrategicNodes)
             {
                 if (node.ParentNode != null)
@@ -40,59 +48,191 @@ namespace AceManager.Core.Strategy
                 }
             }
 
-            // 3. Frontline Phase
+            // 5. Repair Phase
+            // Damaged facilities slowly recover if still supplied
+            ProcessRepairs(map);
+
+            // 6. Frontline Phase
             ProcessFrontline(map);
+        }
+
+        private static void RunAICommanderPhase(MapData map)
+        {
+            // Lazy initialization
+            if (_alliedMC == null)
+            {
+                _alliedMC = new MainCommander("Allied");
+                _alliedSCs = new List<SubCommander> {
+                    new SubCommander("Allied", "North"),
+                    new SubCommander("Allied", "Mid"),
+                    new SubCommander("Allied", "South")
+                };
+            }
+            if (_axisMC == null)
+            {
+                _axisMC = new MainCommander("Axis");
+                _axisSCs = new List<SubCommander> {
+                    new SubCommander("Axis", "North"),
+                    new SubCommander("Axis", "Mid"),
+                    new SubCommander("Axis", "South")
+                };
+            }
+
+            // Update Global Intent
+            _alliedMC.Update(map);
+            _axisMC.Update(map);
+
+            // Regional Assignment
+            foreach (var sc in _alliedSCs) sc.AssignMissions(map, _alliedMC);
+            foreach (var sc in _axisSCs) sc.AssignMissions(map, _axisMC);
+        }
+
+        private static void HandleLogisticalRerouting(MapData map)
+        {
+            foreach (var node in map.StrategicNodes)
+            {
+                // Skip decorative/non-functional nodes
+                if (node is RegionLabelNode || node is IndustrialNode) continue;
+
+                // If current parent is destroyed or missing, or if we haven't initialized parent yet, try to reroute
+                if (node.ParentNode == null || node.ParentNode.IsDestroyed)
+                {
+                    // Clean up broken connection
+                    if (node.ParentNode != null)
+                    {
+                        node.ParentNode.ChildNodes.Remove(node);
+                        node.ParentNode = null;
+                        node.OriginalParent = null; // Clean up original if it's dead
+                    }
+
+                    // Attempt to find a new parent
+                    // Enforce hierarchy: 
+                    // Hubs can only reroute to IndustrialNodes or other Hubs.
+                    // Depots/Bases can reroute to Hubs or Depots.
+                    bool isHub = node is LogisticsNode log && log.IsRailHub;
+
+                    var possibleParents = map.StrategicNodes
+                        .Where(p => p != node && p.OwningNation == node.OwningNation && !p.IsDestroyed)
+                        .Where(p =>
+                        {
+                            if (isHub) return p is IndustrialNode || (p is LogisticsNode hub && hub.IsRailHub);
+                            return p is LogisticsNode; // Depots/Bases can connect to any hub/depot
+                        })
+                        .OrderBy(p => (p.WorldCoordinates - node.WorldCoordinates).Length())
+                        .ToList();
+
+                    // Radius limit: Hubs have longer reach (200km), Depots/Bases (100km)
+                    float maxRadius = isHub ? 200f : 100f;
+                    var nearest = possibleParents.FirstOrDefault();
+
+                    if (nearest != null && (nearest.WorldCoordinates - node.WorldCoordinates).Length() < maxRadius)
+                    {
+                        node.ParentNode = nearest;
+                        if (!nearest.ChildNodes.Contains(node))
+                            nearest.ChildNodes.Add(node);
+
+                        node.IsStarved = false;
+                        GD.Print($"[Logistics] {node.Name} rerouted to {nearest.Name}.");
+                    }
+                    else
+                    {
+                        node.IsStarved = true;
+                        GD.Print($"[Logistics] {node.Name} is SEVERED (No valid parent).");
+                    }
+                }
+                else
+                {
+                    // Parent exists and is alive
+                    node.IsStarved = false;
+                }
+            }
+        }
+
+        private static void CalculateLogisticsWorkload(MapData map)
+        {
+            // Reset workloads
+            foreach (var node in map.StrategicNodes.OfType<LogisticsNode>())
+            {
+                node.CurrentWorkload = 0;
+            }
+
+            // Calculate current workload
+            foreach (var node in map.StrategicNodes)
+            {
+                if (node.ParentNode is LogisticsNode parentLogistics)
+                {
+                    parentLogistics.CurrentWorkload += 1f;
+                }
+            }
         }
 
         private static void ProcessProduction(IndustrialNode factory)
         {
-            if (factory.IsDestroyed) return;
+            if (factory.IsDestroyed)
+            {
+                factory.SupplyLevel = 0;
+                return;
+            }
 
-            // Simple production: factories have infinite raw materials for now
-            // They just add to their own local stockpile, which parent logic pulls/pushes?
-            // Actually, in our graph, Factories are ROOTS. They push to Hubs (Children).
-
-            // Wait, generated logic was: Parent = Hub, Child = Factory? 
-            // "ConnectLayers(map, factories, hubs)" -> Factories are Parents of Hubs?
-            // Let's check StrategicWorldGenerator.ConnectLayers:
-            // "parents" are the first arg.
-            // ConnectLayers(factories, hubs) -> Factory is Parent of Hub.
-            // ConnectLayers(hubs, depots) -> Hub is Parent of Depot.
-            // ConnectLayers(depots, bases) -> Depot is Parent of Base.
-            // Flow: Parent -> Child. Correct.
-
-            // So Factory produces into its own stockpile.
-            // Then PushSupply moves it to Child.
-
-            // Current abstract StrategicNode doesn't have a generic "Resource" storage yet.
-            // We might need to add a generic 'SupplyStockpile' float to StrategicNode based on Abstract.
-            // For now, let's assume 'Integrity' affects 'effectiveness' and we simulate abstract "Supply" flow.
-
-            // TODO: Add 'Stockpile' to StrategicNode if we want real resource tracking.
-            // For this version (MVP+), we simulate "Throughput".
-            // A node is "Supplied" if its parent has supply.
+            // Factories (Hearts) are always at 100% supply if not destroyed
+            factory.SupplyLevel = (factory.CurrentIntegrity / factory.MaxIntegrity) * 100f;
         }
 
         private static void PushSupply(StrategicNode parent, StrategicNode child)
         {
-            // Calculate efficiency based on integrity and interdiction
-            float efficiency = (parent.CurrentIntegrity / parent.MaxIntegrity) *
-                               (child.CurrentIntegrity / child.MaxIntegrity);
+            if (parent.IsDestroyed)
+            {
+                child.SupplyLevel = 0;
+                return;
+            }
 
-            // If rail, higher throughput
-            // If road (supply line), distance penalty?
+            // Base efficiency is inherited from parent
+            float efficiency = parent.SupplyLevel / 100f;
 
-            // For MVP: Transfer "Readiness" or "Fuel/Ammo"
+            // Apply throttling if parent is overloaded
+            if (parent is LogisticsNode logParent)
+            {
+                // Max capacity = 3 standard nodes
+                float capacity = 3.0f;
+                if (logParent.CurrentWorkload > capacity)
+                {
+                    float bottleneck = capacity / logParent.CurrentWorkload;
+                    efficiency *= bottleneck;
+                }
+            }
+
+            // Apply integrity degradation
+            efficiency *= (parent.CurrentIntegrity / parent.MaxIntegrity);
+
+            child.SupplyLevel = Math.Clamp(efficiency * 100f, 0f, 100f);
+
+            // Apply result to Readiness if Military
             if (child is MilitaryNode milNode)
             {
-                // Bases regain readiness if supplied
-                if (efficiency > 0.5f)
+                if (child.SupplyLevel > 50f)
                 {
-                    milNode.Readiness = Math.Min(100, milNode.Readiness + 5 * efficiency);
+                    milNode.Readiness = Math.Min(100, milNode.Readiness + 5 * (child.SupplyLevel / 100f));
                 }
                 else
                 {
                     milNode.Readiness = Math.Max(0, milNode.Readiness - 2); // Attrition
+                }
+            }
+        }
+
+        private static void ProcessRepairs(MapData map)
+        {
+            foreach (var node in map.StrategicNodes)
+            {
+                if (node.IsDestroyed) continue;
+
+                if (node.CurrentIntegrity < node.MaxIntegrity)
+                {
+                    // Repair only if sufficiently supplied
+                    if (node.SupplyLevel > 50f)
+                    {
+                        node.Repair(2.0f); // 2% per day
+                    }
                 }
             }
         }

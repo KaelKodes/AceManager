@@ -31,6 +31,11 @@ namespace AceManager.Core.Strategy
 
         // Supply State
         public bool IsStarved { get; set; } = false; // True if parent is cut off
+        public float SupplyLevel { get; set; } = 100f; // 0-100% supply efficiency
+
+        // Dynamic Logistics
+        public StrategicNode OriginalParent { get; set; }
+        public bool IsRerouted => ParentNode != null && ParentNode != OriginalParent;
 
         public virtual void TakeDamage(float amount)
         {

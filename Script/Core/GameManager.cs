@@ -30,7 +30,9 @@ namespace AceManager.Core
         public CaptainData PlayerCaptain { get; private set; }
         public bool MissionCompletedToday { get; private set; } = false;
 
+        public bool AITurnProcessedToday { get; set; } = false;
         public UpgradeProject ActiveUpgrade { get; private set; }
+        public bool DebugMode { get; set; } = false; // Toggled via Main Menu
 
         public override void _Ready()
         {
@@ -191,12 +193,10 @@ namespace AceManager.Core
             }
 
             MissionCompletedToday = false;
+            AITurnProcessedToday = false; // Trigger new AI moves on next briefing visit
 
             // --- Strategic Simulation ---
-            if (SectorMap != null)
-            {
-                StrategicSim.ProcessTurn(SectorMap);
-            }
+            // Moved to AI Processing Phase in Daily Briefing UI
             // ----------------------------
 
             EmitSignal(SignalName.DayAdvanced);
@@ -215,6 +215,21 @@ namespace AceManager.Core
                 TargetName = targetName
             };
 
+            // --- AI Context Preservation ---
+            // If this mission matches what the Commander requested, keep the strategic context/flavor
+            var assigned = GetAssignedMission();
+            if (assigned != null && assigned.Type == type)
+            {
+                // If it's the exact same target or very close
+                float distToAssigned = (assigned.TargetLocation - (manualTarget ?? Vector2.Zero)).Length();
+                if (distToAssigned < 5.0f || !manualTarget.HasValue)
+                {
+                    mission.CommanderOrderContext = assigned.CommanderOrderContext;
+                    mission.RendezvousPoint = assigned.RendezvousPoint;
+                    mission.DisengagePoint = assigned.DisengagePoint;
+                }
+            }
+
             var homeLoc = SectorMap?.Locations.FirstOrDefault(l => l.Id == "home_base");
             Vector2 startPos = homeLoc?.WorldCoordinates ?? Vector2.Zero;
 
@@ -224,14 +239,42 @@ namespace AceManager.Core
             // Use the shared waypoint generation logic
             mission.Waypoints = MapData.GenerateWaypoints(startPos, targetPos, distance);
 
-            // Update TargetDistance based on actual distance if manual
+            // Update TargetDistance based on actual distance if manual (Raw KM)
             if (manualTarget.HasValue)
             {
-                mission.TargetDistance = (int)Math.Max(1, Math.Min(10, (targetPos - startPos).Length() / 10f));
+                mission.TargetDistance = (int)Math.Max(10, Math.Min(150, (targetPos - startPos).Length()));
             }
 
             CurrentMission = mission;
             return CurrentMission;
+        }
+
+        public MissionData GetAssignedMission()
+        {
+            // Pull the mission from the strategic node associated with the current base
+            if (SectorMap == null) return null;
+
+            var playerNode = SectorMap.StrategicNodes.OfType<MilitaryNode>()
+                .FirstOrDefault(n => n.Id == "player_home_base");
+
+            if (playerNode != null && playerNode.CurrentOrder != null)
+            {
+                // Return the AI-generated order directly. 
+                // The MissionPlanningPanel will use this to fill its UI,
+                // and then call CreateMission (which no longer recurses).
+                return playerNode.CurrentOrder;
+            }
+
+            return null;
+        }
+
+        public void ProcessAITurn()
+        {
+            if (AITurnProcessedToday || SectorMap == null) return;
+
+            GD.Print("[GameManager] Processing AI Turns...");
+            StrategicSim.ProcessTurn(SectorMap);
+            AITurnProcessedToday = true;
         }
 
         public void AddFlightAssignment(FlightAssignment assignment)
@@ -364,6 +407,21 @@ namespace AceManager.Core
                 }
             }
 
+            // Apply physical damage to Strategic Nodes
+            if (SectorMap != null && CurrentMission.ResultBand >= MissionResultBand.MarginalSuccess)
+            {
+                var targetNode = SectorMap.StrategicNodes.FirstOrDefault(n =>
+                    (n.Name == CurrentMission.TargetName && !string.IsNullOrEmpty(n.Name)) ||
+                    (n.WorldCoordinates - CurrentMission.TargetLocation).Length() < 5.0f);
+
+                if (targetNode != null)
+                {
+                    float damage = CalculateMissionDamage(CurrentMission);
+                    targetNode.TakeDamage(damage);
+                    GD.Print($"STRATEGY: Applied {damage:F1} damage to {targetNode.Name}. Integrity: {targetNode.CurrentIntegrity}/{targetNode.MaxIntegrity}");
+                }
+            }
+
             foreach (var assignment in CurrentMission.Assignments)
             {
                 // Return aircraft to ready (or damaged) status
@@ -385,6 +443,40 @@ namespace AceManager.Core
                 ProcessCrewCasualties(assignment.Gunner);
                 ProcessCrewCasualties(assignment.Observer);
             }
+        }
+
+        private float CalculateMissionDamage(MissionData mission)
+        {
+            // Damage factor based on Result
+            float resultFactor = mission.ResultBand switch
+            {
+                MissionResultBand.DecisiveSuccess => 0.5f, // 50% max integrity
+                MissionResultBand.Success => 0.3f,         // 30% max integrity
+                MissionResultBand.MarginalSuccess => 0.15f, // 15% max integrity
+                _ => 0f
+            };
+
+            // Scaling by aircraft effort
+            // Count heavy aircraft (Bombers do full damage, others do partial)
+            int strengthCount = 0;
+            foreach (var assignment in mission.Assignments)
+            {
+                if (assignment.Aircraft == null) continue;
+
+                // For now, check definition name or type if available
+                // Simplification for this phase: every aircraft adds contribution
+                strengthCount++;
+            }
+
+            // A squadron of 4-6 should be required to "one-shot" a 100-health target at 'Success'
+            // Or many missions against a high-integrity (250-400) target.
+            // Damage = MaxIntegrity * resultFactor * (Strength / 5.0)
+
+            // We want it to be hard to kill big hubs.
+            // A 400 HP factory hit by 5 bombers at 'Success' level: 400 * 0.3 * (5/5) = 120 damage (30%)
+            // A 100 HP depot hit by 5 bombers at 'Decisive': 100 * 0.5 * (5/5) = 50 damage (50%)
+
+            return resultFactor * (strengthCount / 5.0f) * 100f; // Scale relative to a "standard node" of 100 HP
         }
 
         public void ScrapAircraft(AircraftInstance aircraft)

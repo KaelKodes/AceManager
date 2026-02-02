@@ -23,6 +23,24 @@ namespace AceManager.UI
 			_newGameButton.Pressed += OnNewGamePressed;
 			_loadGameButton.Pressed += OnLoadGamePressed;
 			_quitButton.Pressed += OnQuitPressed;
+
+			// Debug Checkbox
+			var debugCheck = new CheckBox();
+			debugCheck.Text = "Enable Debug Tools";
+			debugCheck.ButtonPressed = GameManager.Instance.DebugMode;
+
+			// Layout Setup: Center Bottom
+			debugCheck.SetAnchorsPreset(Control.LayoutPreset.CenterBottom);
+			debugCheck.GrowHorizontal = Control.GrowDirection.Both;
+			debugCheck.GrowVertical = Control.GrowDirection.Begin;
+			debugCheck.OffsetBottom = -20; // 20px padding from bottom
+
+			debugCheck.Toggled += (toggled) =>
+			{
+				GameManager.Instance.DebugMode = toggled;
+				GD.Print($"Debug Mode: {toggled}");
+			};
+			AddChild(debugCheck);
 		}
 
 		private void OnNewGamePressed()

@@ -43,16 +43,9 @@ namespace AceManager.Core.Strategy
 
         private static void GenerateCentralHub(MapData map)
         {
-            // Find median frontline segment
-            if (map.FrontlineSegments.Count == 0) return;
-            var centerSegment = map.FrontlineSegments[map.FrontlineSegments.Count / 2];
-
-            Vector2 center = centerSegment.GetCenterPoint();
-            Vector2 normal = GetSegmentNormal(centerSegment);
-            Vector2 dir = -normal; // Towards Allies
-
-            // Place deeply in rear (e.g., 120km back)
-            Vector2 pos = center + (dir * 120);
+            // User Update: Le Bourget N. Hub
+            // Pos: 125.9, -5488.6
+            Vector2 pos = new Vector2(125.9f, -5488.6f);
 
             var node = new LogisticsNode
             {
@@ -71,19 +64,9 @@ namespace AceManager.Core.Strategy
 
         private static void GenerateSoutheastHub(MapData map)
         {
-            // Grid labels like "T-269" are tactical grid indices.
-            // Row label "-269" -> gridY index -270.
-            float tactX = 19 * 20.0f + 10.0f; // Col 19 center
-            float tactY = -270 * 20.0f + 10.0f; // Row -270 center
-
-            Vector2 pivotKM = map.GetWorldCoordinates(new Vector2(map.PivotLon, map.PivotLat));
-            Vector2 offsetKM = map.GetWorldCoordinates(new Vector2(map.LonOffset, map.LatOffset));
-
-            // Reverse tactical projection: World = Pivot + (Tactical - Pivot - Offset) / Spread
-            float worldX = pivotKM.X + (tactX - pivotKM.X - offsetKM.X) / map.LonSpread;
-            float worldY = pivotKM.Y + (tactY - pivotKM.Y - offsetKM.Y) / map.LatSpread;
-
-            Vector2 pos = new Vector2(worldX, worldY);
+            // User Update: Chalons Southeast Hub
+            // Pos: 425.5, -5347.6
+            Vector2 pos = new Vector2(425.5f, -5347.6f);
 
             var node = new LogisticsNode
             {
@@ -97,7 +80,7 @@ namespace AceManager.Core.Strategy
                 IntelStatus = StrategicNode.IntelLevel.Confirmed
             };
             map.StrategicNodes.Add(node);
-            GD.Print("[StrategicWorldGenerator] Created Southeast Hub: Chalons Southeast Hub (t -269)");
+            GD.Print("[StrategicWorldGenerator] Created Southeast Hub: Chalons Southeast Hub");
         }
 
         private static void GenerateCountryLabels(MapData map)
@@ -204,6 +187,16 @@ namespace AceManager.Core.Strategy
 
         private static void GenerateFactionNodes(MapData map, string faction, AirbaseData homeBase)
         {
+            // Special handling for Allied Presets
+            if (faction == "Allied")
+            {
+                GenerateAlliedFixedNodes(map);
+
+                // Still need to ensure player base creation
+                CreatePlayerNode(map, homeBase);
+                return;
+            }
+
             // Faction direction multiplier (West vs East)
             // Assuming Allies are West (-X), Axis East (+X) generally, 
             // but this depends on the specific map pivot.
@@ -258,6 +251,84 @@ namespace AceManager.Core.Strategy
             }
         }
 
+        private static void GenerateAlliedFixedNodes(MapData map)
+        {
+            // User provided coordinates (Feb 2026)
+            // We apply a small random offset (+/- 2km) to keep it organic ("deviate a little")
+
+            // Format: (X, Y, NameSuffix, Type, Strength/Capacity)
+
+            var definitions = new List<(Vector2 Pos, string Suffix, string Type, int Value)>
+            {
+                // -- Sector North (Flanders) --
+                (new Vector2(198.7f, -5667.9f), "Forward Outpost", "Infantry", 400),
+                (new Vector2(164.1f, -5659.3f), "Div. HQ", "Infantry", 1200),
+                (new Vector2(176.2f, -5654.9f), "Supply Depot", "Logistics", 0),
+                (new Vector2(142.8f, -5648.9f), "Rail Hub", "RailHub", 0),
+                (new Vector2(147.2f, -5628.4f), "Munitions Works", "Industry", 0),
+                
+                // -- Sector North-Mid --
+                (new Vector2(203.2f, -5611.6f), "Forward Outpost", "Infantry", 400),
+                (new Vector2(180.5f, -5611.9f), "Div. HQ", "Infantry", 1200),
+                (new Vector2(171.5f, -5599.2f), "Supply Depot", "Logistics", 0),
+                
+                // -- Sector Mid (Arras/Somme) --
+                (new Vector2(206.9f, -5565.2f), "Forward Outpost", "Infantry", 400),
+                (new Vector2(187.5f, -5560.2f), "Div. HQ", "Infantry", 1200),
+                (new Vector2(168.4f, -5571.0f), "Supply Depot", "Logistics", 0),
+                
+                // -- Sector South-Mid (Aisne) --
+                (new Vector2(235.4f, -5499.1f), "Forward Outpost", "Infantry", 400),
+                (new Vector2(202.2f, -5491.7f), "Div. HQ", "Infantry", 1200),
+                (new Vector2(189.8f, -5507.1f), "Supply Depot", "Logistics", 0),
+                
+                // -- Sector South (Champagne) --
+                (new Vector2(291.0f, -5463.7f), "Forward Outpost", "Infantry", 400),
+                (new Vector2(304.2f, -5449.3f), "Div. HQ", "Infantry", 1200),
+                (new Vector2(297.7f, -5432.8f), "Supply Depot", "Logistics", 0),
+                (new Vector2(314.6f, -5409.5f), "Rail Hub", "RailHub", 0),
+                
+                // -- Sector Deep South (Verdun/Meuse) --
+                (new Vector2(370.8f, -5448.7f), "Forward Outpost", "Infantry", 400),
+                (new Vector2(365.1f, -5419.9f), "Div. HQ", "Infantry", 1200),
+                (new Vector2(362.1f, -5427.9f), "Supply Depot", "Logistics", 0),
+                
+                // -- Sector Far South East (Vosges) --
+                (new Vector2(492.7f, -5346.9f), "Forward Outpost", "Infantry", 400),
+                (new Vector2(467.5f, -5335.6f), "Div. HQ", "Infantry", 1200),
+                (new Vector2(461.0f, -5355.5f), "Supply Depot", "Logistics", 0),
+            };
+
+            foreach (var def in definitions)
+            {
+                Vector2 variation = new Vector2((float)(_rng.NextDouble() * 4 - 2), (float)(_rng.NextDouble() * 4 - 2));
+                Vector2 finalPos = def.Pos + variation;
+
+                // Fallback RegionId calc (approximated since we don't have the segment ID handy easily here, 
+                // but determine region by Y is robust enough)
+                int regionHint = -1;
+                // We could find the closest segment if needed for assignments, but the current logic assigns later or uses Y.
+
+                switch (def.Type)
+                {
+                    case "Infantry":
+                        CreateInfantryBase(map, "Allied", finalPos, regionHint, def.Suffix, def.Value);
+                        break;
+                    case "Logistics":
+                        CreateLogisticsNode(map, "Allied", finalPos, false);
+                        break;
+                    case "RailHub":
+                        CreateLogisticsNode(map, "Allied", finalPos, true);
+                        break;
+                    case "Industry":
+                        CreateIndustrialNode(map, "Allied", finalPos);
+                        break;
+                }
+            }
+
+            GD.Print($"[StrategicWorldGenerator] Generated {definitions.Count} Fixed Allied Nodes.");
+        }
+
         private static void CreateInfantryBase(MapData map, string faction, Vector2 pos, int segmentId, string nameSuffix, int strength)
         {
             var node = new InfantryBase
@@ -277,10 +348,11 @@ namespace AceManager.Core.Strategy
 
         private static void CreateLogisticsNode(MapData map, string faction, Vector2 pos, bool isRailHub)
         {
+            string shortId = Guid.NewGuid().ToString().Substring(0, 4);
             var node = new LogisticsNode
             {
-                Id = $"{faction}_{(isRailHub ? "hub" : "depot")}_{Guid.NewGuid().ToString().Substring(0, 4)}",
-                Name = isRailHub ? $"{faction} Rail Hub" : $"{faction} Supply Depot",
+                Id = $"{faction}_{(isRailHub ? "hub" : "depot")}_{shortId}",
+                Name = isRailHub ? $"{faction} Rail Hub ({shortId})" : $"{faction} Supply Depot ({shortId})",
                 RegionId = DetermineRegion(pos.Y),
                 WorldCoordinates = pos,
                 OwningNation = faction,
@@ -295,10 +367,11 @@ namespace AceManager.Core.Strategy
         private static void CreateIndustrialNode(MapData map, string faction, Vector2 pos)
         {
             var type = (IndustryType)_rng.Next(0, 3);
+            string shortId = Guid.NewGuid().ToString().Substring(0, 4);
             var node = new IndustrialNode
             {
-                Id = $"{faction}_ind_{Guid.NewGuid().ToString().Substring(0, 4)}",
-                Name = $"{faction} {type} Works",
+                Id = $"{faction}_ind_{shortId}",
+                Name = $"{faction} {type} Works ({shortId})",
                 RegionId = DetermineRegion(pos.Y),
                 WorldCoordinates = pos,
                 OwningNation = faction,
@@ -347,6 +420,7 @@ namespace AceManager.Core.Strategy
                     {
                         var nearest = alliedDepots.OrderBy(d => d.WorldCoordinates.DistanceTo(playerNode.WorldCoordinates)).First();
                         playerNode.ParentNode = nearest;
+                        playerNode.OriginalParent = nearest;
                         nearest.ChildNodes.Add(playerNode);
                         float dist = nearest.WorldCoordinates.DistanceTo(playerNode.WorldCoordinates);
                         map.SupplyLines.Add(new SupplyLine(nearest.Id, playerNode.Id, dist, false));
@@ -417,6 +491,7 @@ namespace AceManager.Core.Strategy
                 if (parent != null)
                 {
                     child.ParentNode = parent;
+                    child.OriginalParent = parent;
                     parent.ChildNodes.Add(child);
 
                     // Logic: ConnectLayers is for Roads (Factories->Hubs, Hubs->Depots, Depots->Bases)
@@ -435,15 +510,16 @@ namespace AceManager.Core.Strategy
             return new Vector2(dir.Y, -dir.X); // Rotated 90 deg, pointing roughly East
         }
 
-        private static string DetermineRegion(float lat) // Raw World Y
+        private static string DetermineRegion(float latKM) // Raw World Y
         {
-            // Y increases South. 
-            // North < -600 (Approx)
-            // Mid -600 to -300
-            // South > -300
-            // Note: These values depend on the World Coordinate calibration in MapData.
-            // Using placeholder logic based on relative position.
-            return "Mid"; // Placeholder
+            // Y decreases North (more negative), increases South (less negative)
+            // North: < -5550 (Lat > 50.0)
+            // Mid: -5550 to -5440 (Lat 49.0 - 50.0)
+            // South: > -5440 (Lat < 49.0)
+
+            if (latKM < -5550) return "North";
+            if (latKM > -5440) return "South";
+            return "Mid";
         }
     }
 }

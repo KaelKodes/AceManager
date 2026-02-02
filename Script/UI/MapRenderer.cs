@@ -21,6 +21,46 @@ namespace AceManager.UI
         private readonly Line2D _missionDepartureLine;
         private readonly Line2D _missionReturnLine;
         private readonly List<Line2D> _frontLines = new();
+        private Polygon2D _departureArrow;
+        private Polygon2D _returnArrow;
+
+        private void EnsureArrows()
+        {
+            if (_departureArrow == null || !_departureArrow.IsInsideTree())
+            {
+                _departureArrow = new Polygon2D
+                {
+                    Name = "DepartureArrow",
+                    Color = new Color(0.2f, 1.0f, 0.2f, 0.8f),
+                    Polygon = new Vector2[] { new Vector2(-12, -6), new Vector2(0, 0), new Vector2(-12, 6) },
+                    Visible = false
+                };
+                _mapArea.AddChild(_departureArrow);
+
+                _returnArrow = new Polygon2D
+                {
+                    Name = "ReturnArrow",
+                    Color = new Color(1.0f, 0.2f, 0.2f, 0.8f),
+                    Polygon = new Vector2[] { new Vector2(-12, -6), new Vector2(0, 0), new Vector2(-12, 6) },
+                    Visible = false
+                };
+                _mapArea.AddChild(_returnArrow);
+            }
+        }
+        // Since I can't edit the constructor easily with partial replace without context shifts, 
+        // I will use lazy initialization in UpdateMissionPath or assume I can inject them.
+        // Actually, I'll add a helper method EnsureArrows() called in RebuildMap/UpdateMissionPath to be safe.
+
+
+        // To do this cleanly, I'll replace the field definitions block AND the constructor AND UpdateMissionPath? 
+        // That's too much.
+        // I'll add the fields near the other Line2D definitions, then update the constructor to init them.
+        // Then update UpdateMissionPath.
+        // Wait, replace_file_content works on chunks. 
+
+        // Let's do it in 2 chunks.
+        // Chunk 1: Fields and Constructor.
+        // Chunk 2: UpdateMissionPath logic.
         private readonly List<Line2D> _supplyLines = new(); // New visualizer for supply
 
         private struct RailDrawData
@@ -156,11 +196,27 @@ namespace AceManager.UI
                         continue;
                 }
 
+                // STRATEGIC STATUS: Severed Lines
+                if (fromNode.IsDestroyed || toNode.IsStarved)
+                {
+                    // Skip drawing severed lines for the user to see the "erasure"
+                    continue;
+                }
+
                 var line = new Line2D();
                 // Thin line for rail because we draw ties underneath, thicker for road
                 line.Width = sLine.IsRail ? 2.0f : 2.5f;
-                Color c = (fromNode?.OwningNation == "Allied") ? new Color(0.2f, 0.9f, 0.2f, 0.3f) : new Color(0.9f, 0.2f, 0.2f, 0.8f);
-                line.DefaultColor = c;
+
+                // Color Selection: Standard vs Throttled
+                Color baseColor = (fromNode.OwningNation == "Allied") ? new Color(0.39f, 0.58f, 0.93f, 0.6f) : new Color(0.9f, 0.2f, 0.2f, 0.8f); // CornflowerBlue-ish
+
+                if (fromNode is LogisticsNode logParent && logParent.CurrentWorkload > 3.0f)
+                {
+                    // Throttled (Orange/Yellow)
+                    baseColor = new Color(0.9f, 0.6f, 0.1f, 0.6f);
+                }
+
+                line.DefaultColor = baseColor;
                 line.Antialiased = true;
 
                 // Store metadata to find endpoints later
@@ -413,11 +469,39 @@ namespace AceManager.UI
             _missionDepartureLine.ClearPoints();
             _missionReturnLine.ClearPoints();
 
+            EnsureArrows();
+            _departureArrow.Visible = false;
+            _returnArrow.Visible = false;
+
             var departurePoints = waypoints.Take(waypoints.Count - 1).ToList();
             AddArcedPoints(_missionDepartureLine, departurePoints);
 
+            // Position Departure Arrow (Green) - Align with the curve's end tangent
+            if (_missionDepartureLine.GetPointCount() >= 2)
+            {
+                int count = _missionDepartureLine.GetPointCount();
+                Vector2 endPos = _missionDepartureLine.GetPointPosition(count - 1);
+                Vector2 prevPos = _missionDepartureLine.GetPointPosition(count - 2);
+
+                _departureArrow.Position = endPos;
+                _departureArrow.Rotation = (endPos - prevPos).Angle();
+                _departureArrow.Visible = true;
+            }
+
             var returnPoints = new List<Vector2> { waypoints[waypoints.Count - 2], waypoints[waypoints.Count - 1] };
             AddArcedPoints(_missionReturnLine, returnPoints);
+
+            // Position Return Arrow (Red) - Align with the curve's end tangent
+            if (_missionReturnLine.GetPointCount() >= 2)
+            {
+                int count = _missionReturnLine.GetPointCount();
+                Vector2 endPos = _missionReturnLine.GetPointPosition(count - 1);
+                Vector2 prevPos = _missionReturnLine.GetPointPosition(count - 2);
+
+                _returnArrow.Position = endPos;
+                _returnArrow.Rotation = (endPos - prevPos).Angle();
+                _returnArrow.Visible = true;
+            }
         }
 
         private void AddArcedPoints(Line2D line, List<Vector2> points)

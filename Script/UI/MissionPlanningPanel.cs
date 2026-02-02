@@ -76,6 +76,17 @@ namespace AceManager.UI
 
 			// Initialize Helpers
 			_routePlanner = new RoutePlanner();
+
+			// Inject Home Location
+			if (GameManager.Instance != null && GameManager.Instance.SectorMap != null)
+			{
+				var homeLoc = GameManager.Instance.SectorMap.Locations.FirstOrDefault(l => l.Id == "home_base");
+				if (homeLoc != null)
+				{
+					_routePlanner.HomeWorldPos = homeLoc.WorldCoordinates;
+				}
+			}
+
 			_routePlanner.OnPathUpdated += OnPathUpdated;
 
 			SetupMapNodes();
@@ -120,233 +131,255 @@ namespace AceManager.UI
 			_inputController.SetZoom(6f);
 
 			// Custom Target Marker (independent of renderer's internal markers)
-			_targetMarker = new Control { Name = "CalculatedTargetMarker" };
-			var dot = new ColorRect
-			{
-				Size = new Vector2(10, 10),
-				Position = new Vector2(-5, -5),
-				Color = Colors.Red
-			};
-			_targetMarker.AddChild(dot);
-			_flightMapArea.AddChild(_targetMarker); // Add on top
+            _targetMarker = new Control { Name = "CalculatedTargetMarker" };
+            var dot = new ColorRect
+            {
+                Size = new Vector2(10, 10),
+                Position = new Vector2(-5, -5),
+                Color = Colors.Red
+            };
+            _targetMarker.AddChild(dot);
+            _flightMapArea.AddChild(_targetMarker); // Add on top
 
-			_targetLabel = new Label { Text = "TARGET", HorizontalAlignment = HorizontalAlignment.Center };
-			_targetLabel.AddThemeFontSizeOverride("font_size", 10);
-			_flightMapArea.AddChild(_targetLabel);
+            _targetLabel = new Label { Text = "TARGET", HorizontalAlignment = HorizontalAlignment.Center };
+            _targetLabel.AddThemeFontSizeOverride("font_size", 10);
+            _flightMapArea.AddChild(_targetLabel);
 
 
 
-			// Enable clipping to prevent map from drawing over other UI elements
-			_flightMapArea.ClipContents = true;
+            // Enable clipping to prevent map from drawing over other UI elements
+            _flightMapArea.ClipContents = true;
 
-			// Hook input for clicking (still needed for setting target manualy)
-			_flightMapArea.GuiInput += OnMapInput;
-			_flightMapArea.Resized += () =>
-			{
-				// Rebuild to show markers if initial size was 0
-				_renderer?.RebuildMap();
-				CallDeferred(nameof(UpdateMapVisuals));
-			};
-		}
+            // Hook input for clicking (still needed for setting target manualy)
+            _flightMapArea.GuiInput += OnMapInput;
+            _flightMapArea.Resized += () =>
+            {
+                // Rebuild to show markers if initial size was 0
+                _renderer?.RebuildMap();
+                CallDeferred(nameof(UpdateMapVisuals));
+            };
+        }
 
-		private void OnMapCursorMove(Vector2 localPos)
-		{
-			// Optional: Show coordinate tooltip?
-		}
+        private void OnMapCursorMove(Vector2 localPos)
+        {
+            // Optional: Show coordinate tooltip?
+        }
 
-		private void SetupOptions()
-		{
-			foreach (MissionType type in Enum.GetValues(typeof(MissionType)))
-			{
-				_typeOption.AddItem(type.ToString());
-			}
-			_typeOption.Selected = 0;
+        private void SetupOptions()
+        {
+            foreach (MissionType type in Enum.GetValues(typeof(MissionType)))
+            {
+                _typeOption.AddItem(type.ToString());
+            }
+            _typeOption.Selected = 0;
 
-			foreach (RiskPosture risk in Enum.GetValues(typeof(RiskPosture)))
-			{
-				_riskOption.AddItem(risk.ToString());
-			}
-			_riskOption.Selected = 1;
-		}
+            foreach (RiskPosture risk in Enum.GetValues(typeof(RiskPosture)))
+            {
+                _riskOption.AddItem(risk.ToString());
+            }
+            _riskOption.Selected = 1;
+        }
 
-		private void RefreshData()
-		{
-			if (!_isReady) return;
+        private void RefreshData()
+        {
+            if (!_isReady) return;
 
-			var gm = GameManager.Instance;
-			if (gm == null)
-			{
-				GD.PrintErr("GameManager not initialized!");
-				return;
-			}
+            var gm = GameManager.Instance;
+            if (gm == null)
+            {
+                GD.PrintErr("GameManager not initialized!");
+                return;
+            }
 
-			_availableAircraft = gm.GetAvailableAircraft();
-			_availablePilots = gm.Roster.GetAvailablePilots();
-			_pendingAssignments.Clear();
-			_flightLeader = null;
+            _availableAircraft = gm.GetAvailableAircraft();
+            _availablePilots = gm.Roster.GetAvailablePilots();
+            _pendingAssignments.Clear();
+            _flightLeader = null;
 
-			// Setup Map Data
-			if (gm.SectorMap != null)
-			{
-				var hLoc = gm.SectorMap.Locations.FirstOrDefault(l => l.Id == "home_base");
-				Vector2 homeCoords = hLoc?.WorldCoordinates ?? Vector2.Zero;
+            // Setup Map Data
+            if (gm.SectorMap != null)
+            {
+                var hLoc = gm.SectorMap.Locations.FirstOrDefault(l => l.Id == "home_base");
+                Vector2 homeCoords = hLoc?.WorldCoordinates ?? Vector2.Zero;
 
-				_routePlanner.HomeWorldPos = homeCoords;
-				_renderer.HomeWorldPos = homeCoords; // Important: center view on home
-				_renderer.SetMapData(gm.SectorMap);
-				GD.Print($"MissionPlanningPanel: Loaded map with {gm.SectorMap.Locations.Count} locations and {gm.SectorMap.FrontLinePoints?.Length ?? 0} frontline points.");
-			}
+                _routePlanner.HomeWorldPos = homeCoords;
+                _renderer.HomeWorldPos = homeCoords; // Important: center view on home
+                _renderer.SetMapData(gm.SectorMap);
+                GD.Print($"MissionPlanningPanel: Loaded map with {gm.SectorMap.Locations.Count} locations and {gm.SectorMap.FrontLinePoints?.Length ?? 0} frontline points.");
+            }
 
-			// Reset selection flow
-			_currentMode = SelectionMode.PickAircraft;
-			_tempAssignment = null;
+            // Reset selection flow
+            _currentMode = SelectionMode.PickAircraft;
+            _tempAssignment = null;
 
-			GD.Print($"MissionPlanningPanel: Found {_availableAircraft.Count} aircraft, {_availablePilots.Count} pilots");
+            GD.Print($"MissionPlanningPanel: Found {_availableAircraft.Count} aircraft, {_availablePilots.Count} pilots");
 
-			RefreshLists();
-			RefreshLists();
+            RefreshLists();
 
-			// Auto-select Command's requested mission type
-			if (gm.TodaysBriefing != null)
-			{
-				var recommendedTypes = gm.TodaysBriefing.GetMatchingMissionTypes();
-				if (recommendedTypes.Count > 0)
-				{
-					var recommended = recommendedTypes[0];
-					// Find index in dropdown
-					for (int i = 0; i < _typeOption.ItemCount; i++)
-					{
-						if (_typeOption.GetItemText(i) == recommended.ToString())
-						{
-							_typeOption.Selected = i;
-							break;
-						}
-					}
-				}
-			}
+            // --- AI Integration: Load assigned mission details ---
+            var assigned = gm.GetAssignedMission();
+            if (assigned != null)
+            {
+                GD.Print($"MissionPlanningPanel: Loading AI-assigned {assigned.Type} mission against {assigned.TargetName}");
 
-			// Initial path refresh
-			_routePlanner.RefreshPath();
-		}
+                // 1. Set Mission Type
+                for (int i = 0; i < _typeOption.ItemCount; i++)
+                {
+                    if (_typeOption.GetItemText(i) == assigned.Type.ToString())
+                    {
+                        _typeOption.Selected = i;
+                        break;
+                    }
+                }
 
-		public override void _Notification(int what)
-		{
-			if (what == NotificationVisibilityChanged && Visible && _isReady)
-			{
-				RefreshData();
-			}
-		}
+                // 2. Set Target in RoutePlanner (must happen before slider update to avoid overriding ManualTargetPos)
+                _routePlanner.SetTarget(assigned.TargetLocation, assigned.TargetName);
 
-		private void PopulatePilotList()
-		{
-			if (_pilotList == null) return;
+                // 3. Set Distance Slider (after SetTarget since SetTarget might clamp distance differently)
+                _distanceSlider.Value = assigned.TargetDistance;
+                int miles = (int)(assigned.TargetDistance * 0.621371f);
+                _distanceValue.Text = $"{assigned.TargetDistance} km ({miles} mi)";
+            }
+            else if (gm.TodaysBriefing != null)
+            {
+                // Fallback to old recommendation logic if no specific mission is assigned
+                var recommendedTypes = gm.TodaysBriefing.GetMatchingMissionTypes();
+                if (recommendedTypes.Count > 0)
+                {
+                    var recommended = recommendedTypes[0];
+                    for (int i = 0; i < _typeOption.ItemCount; i++)
+                    {
+                        if (_typeOption.GetItemText(i) == recommended.ToString())
+                        {
+                            _typeOption.Selected = i;
+                            break;
+                        }
+                    }
+                }
+            }
 
-			_pilotList.Clear();
+            // Initial path refresh
+            _routePlanner.RefreshPath();
+        }
 
-			// Get pilots already assigned
-			var assignedPilots = _pendingAssignments.Select(a => a.Pilot).ToHashSet();
-			var assignedGunners = _pendingAssignments.Where(a => a.Gunner != null).Select(a => a.Gunner).ToHashSet();
-			var assignedObservers = _pendingAssignments.Where(a => a.Observer != null).Select(a => a.Observer).ToHashSet();
+        public override void _Notification(int what)
+        {
+            if (what == NotificationVisibilityChanged && Visible && _isReady)
+            {
+                RefreshData();
+            }
+        }
 
-			// Also exclude pilot of current temp assignment
-			if (_tempAssignment?.Pilot != null) assignedPilots.Add(_tempAssignment.Pilot);
-			if (_tempAssignment?.Gunner != null) assignedGunners.Add(_tempAssignment.Gunner);
-			if (_tempAssignment?.Observer != null) assignedObservers.Add(_tempAssignment.Observer);
+        private void PopulatePilotList()
+        {
+            if (_pilotList == null) return;
 
-			var available = _availablePilots
-				.Where(p => !assignedPilots.Contains(p) && !assignedGunners.Contains(p) && !assignedObservers.Contains(p))
-				.OrderByDescending(p => GetPilotMissionScore(p))
-				.ToList();
+            _pilotList.Clear();
 
-			foreach (var pilot in available)
-			{
-				string stats = GetPilotListStats(pilot);
-				string info = $"{pilot.Name} {stats}";
-				_pilotList.AddItem(info);
-				_pilotList.SetItemMetadata(_pilotList.ItemCount - 1, pilot.Name);
-			}
-		}
+            // Get pilots already assigned
+            var assignedPilots = _pendingAssignments.Select(a => a.Pilot).ToHashSet();
+            var assignedGunners = _pendingAssignments.Where(a => a.Gunner != null).Select(a => a.Gunner).ToHashSet();
+            var assignedObservers = _pendingAssignments.Where(a => a.Observer != null).Select(a => a.Observer).ToHashSet();
 
-		private float GetPilotMissionScore(CrewData pilot)
-		{
-			var type = (MissionType)_typeOption.Selected;
+            // Also exclude pilot of current temp assignment
+            if (_tempAssignment?.Pilot != null) assignedPilots.Add(_tempAssignment.Pilot);
+            if (_tempAssignment?.Gunner != null) assignedGunners.Add(_tempAssignment.Gunner);
+            if (_tempAssignment?.Observer != null) assignedObservers.Add(_tempAssignment.Observer);
 
-			if (_currentMode == SelectionMode.PickPilot)
-			{
-				return type switch
-				{
-					MissionType.Patrol or MissionType.Interception or MissionType.Escort =>
-						pilot.GUN + pilot.CTL + pilot.OA,
-					MissionType.Reconnaissance =>
-						pilot.CTL + pilot.DA + pilot.STA,
-					MissionType.Bombing or MissionType.Strafing =>
-						pilot.GUN + pilot.CTL + pilot.DIS,
-					_ => pilot.GetDogfightRating()
-				};
-			}
-			else if (_currentMode == SelectionMode.PickObserver)
-			{
-				return type switch
-				{
-					MissionType.Patrol or MissionType.Interception or MissionType.Escort =>
-						pilot.GUN + pilot.DA + pilot.RFX,
-					MissionType.Reconnaissance =>
-						pilot.OA + pilot.TA + pilot.DIS,
-					MissionType.Bombing or MissionType.Strafing =>
-						pilot.OA + pilot.DIS + pilot.TA,
-					_ => pilot.GUN
-				};
-			}
-			return 0;
-		}
+            var available = _availablePilots
+                .Where(p => !assignedPilots.Contains(p) && !assignedGunners.Contains(p) && !assignedObservers.Contains(p))
+                .OrderByDescending(p => GetPilotMissionScore(p))
+                .ToList();
 
-		private string GetPilotListStats(CrewData pilot)
-		{
-			var type = (MissionType)_typeOption.Selected;
+            foreach (var pilot in available)
+            {
+                string stats = GetPilotListStats(pilot);
+                string info = $"{pilot.Name} {stats}";
+                _pilotList.AddItem(info);
+                _pilotList.SetItemMetadata(_pilotList.ItemCount - 1, pilot.Name);
+            }
+        }
 
-			if (_currentMode == SelectionMode.PickPilot)
-			{
-				return type switch
-				{
-					MissionType.Patrol or MissionType.Interception or MissionType.Escort =>
-						$"(GUN:{pilot.GUN} CTL:{pilot.CTL} OA:{pilot.OA})",
-					MissionType.Reconnaissance =>
-						$"(CTL:{pilot.CTL} DA:{pilot.DA} STA:{pilot.STA})",
-					MissionType.Bombing or MissionType.Strafing =>
-						$"(GUN:{pilot.GUN} CTL:{pilot.CTL} DIS:{pilot.DIS})",
-					_ => $"(DF:{pilot.GetDogfightRating():F0})"
-				};
-			}
-			else if (_currentMode == SelectionMode.PickObserver)
-			{
-				return type switch
-				{
-					MissionType.Patrol or MissionType.Interception or MissionType.Escort =>
-						$"(GUN:{pilot.GUN} DA:{pilot.DA} RFX:{pilot.RFX})",
-					MissionType.Reconnaissance =>
-						$"(OA:{pilot.OA} TA:{pilot.TA} DIS:{pilot.DIS})",
-					MissionType.Bombing or MissionType.Strafing =>
-						$"(OA:{pilot.OA} DIS:{pilot.DIS} TA:{pilot.TA})",
-					_ => $"(GUN:{pilot.GUN})"
-				};
-			}
+        private float GetPilotMissionScore(CrewData pilot)
+        {
+            var type = (MissionType)_typeOption.Selected;
 
-			return "";
-		}
+            if (_currentMode == SelectionMode.PickPilot)
+            {
+                return type switch
+                {
+                    MissionType.Patrol or MissionType.Interception or MissionType.Escort =>
+                        pilot.GUN + pilot.CTL + pilot.OA,
+                    MissionType.Reconnaissance =>
+                        pilot.CTL + pilot.DA + pilot.STA,
+                    MissionType.Bombing or MissionType.Strafing =>
+                        pilot.GUN + pilot.CTL + pilot.DIS,
+                    _ => pilot.GetDogfightRating()
+                };
+            }
+            else if (_currentMode == SelectionMode.PickObserver)
+            {
+                return type switch
+                {
+                    MissionType.Patrol or MissionType.Interception or MissionType.Escort =>
+                        pilot.GUN + pilot.DA + pilot.RFX,
+                    MissionType.Reconnaissance =>
+                        pilot.OA + pilot.TA + pilot.DIS,
+                    MissionType.Bombing or MissionType.Strafing =>
+                        pilot.OA + pilot.DIS + pilot.TA,
+                    _ => pilot.GUN
+                };
+            }
+            return 0;
+        }
 
-		private void PopulateAircraftList()
-		{
-			if (_aircraftList == null) return;
+        private string GetPilotListStats(CrewData pilot)
+        {
+            var type = (MissionType)_typeOption.Selected;
 
-			_aircraftList.Clear();
+            if (_currentMode == SelectionMode.PickPilot)
+            {
+                return type switch
+                {
+                    MissionType.Patrol or MissionType.Interception or MissionType.Escort =>
+                        $"(GUN:{pilot.GUN} CTL:{pilot.CTL} OA:{pilot.OA})",
+                    MissionType.Reconnaissance =>
+                        $"(CTL:{pilot.CTL} DA:{pilot.DA} STA:{pilot.STA})",
+                    MissionType.Bombing or MissionType.Strafing =>
+                        $"(GUN:{pilot.GUN} CTL:{pilot.CTL} DIS:{pilot.DIS})",
+                    _ => $"(DF:{pilot.GetDogfightRating():F0})"
+                };
+            }
+            else if (_currentMode == SelectionMode.PickObserver)
+            {
+                return type switch
+                {
+                    MissionType.Patrol or MissionType.Interception or MissionType.Escort =>
+                        $"(GUN:{pilot.GUN} DA:{pilot.DA} RFX:{pilot.RFX})",
+                    MissionType.Reconnaissance =>
+                        $"(OA:{pilot.OA} TA:{pilot.TA} DIS:{pilot.DIS})",
+                    MissionType.Bombing or MissionType.Strafing =>
+                        $"(OA:{pilot.OA} DIS:{pilot.DIS} TA:{pilot.TA})",
+                    _ => $"(GUN:{pilot.GUN})"
+                };
+            }
 
-			// Get aircraft already assigned
-			var assignedAircraft = _pendingAssignments.Select(a => a.Aircraft).ToHashSet();
+            return "";
+        }
 
-			bool isGrounded = GameManager.Instance.TodaysBriefing?.IsFlightGrounded() ?? false;
-			foreach (var aircraft in _availableAircraft)
-			{
-				if (assignedAircraft.Contains(aircraft)) continue;
+        private void PopulateAircraftList()
+        {
+            if (_aircraftList == null) return;
+
+            _aircraftList.Clear();
+
+            // Get aircraft already assigned
+            var assignedAircraft = _pendingAssignments.Select(a => a.Aircraft).ToHashSet();
+
+            bool isGrounded = GameManager.Instance.TodaysBriefing?.IsFlightGrounded() ?? false;
+            foreach (var aircraft in _availableAircraft)
+            {
+                if (assignedAircraft.Contains(aircraft)) continue;
 				if (isGrounded) continue; // Don't show aircraft if training
 
 				string seats = aircraft.GetCrewSeats() >= 2 ? " [2-Seater]" : "";
@@ -810,7 +843,10 @@ namespace AceManager.UI
 				_targetMarker.Position = _renderer.GetVisualPosition(_routePlanner.GetTargetPosition());
 				_targetMarker.Visible = true;
 				if (_targetLabel != null)
+				{
 					_targetLabel.Position = _targetMarker.Position + new Vector2(-50, 10);
+					_targetLabel.Text = _routePlanner.TargetName.ToUpper();
+				}
 			}
 
 			// Notify central map
